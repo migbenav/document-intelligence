@@ -1,7 +1,7 @@
 # Product Requirements Document
 
-> Version: 0.5
-> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md, ADR-005-privacy-external-processing.md
+> Version: 0.6
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md, ADR-005-privacy-external-processing.md, ADR-006-document-type-schemas.md
 
 ---
 
@@ -85,7 +85,59 @@ El sistema construye un Knowledge Model identificando los siguientes elementos (
 - procesos;
 - restricciones.
 
-Cada elemento incluye un tipo, contenido textual y una referencia de evidencia trazable (`source_ref`) que permite verificar su origen en el documento fuente. Las relaciones entre elementos se capturan de forma opcional cuando el sistema las identifica con suficiente confianza.
+Cada elemento incluye un tipo, contenido textual y una referencia de evidencia trazable (`source_ref`) que permite verificar su origen en el documento fuente.
+
+### Relaciones entre elementos
+
+El Knowledge Model incluye relaciones opcionales entre elementos, utilizando un vocabulario fijo de 4 tipos:
+
+| Tipo | Semántica | Dirección |
+|------|-----------|-----------|
+| constrains | Un elemento restringe o limita a otro | dirigida |
+| participates_in | Un actor participa en un proceso o contexto | dirigida |
+| depends_on | Un elemento depende de otro para ser válido | dirigida |
+| contradicts | Un elemento contradice o conflictúa con otro | bidireccional |
+
+Las relaciones se capturan cuando el sistema las identifica con suficiente confianza. El vocabulario acotado mantiene el Knowledge Model simple, mejora la consistencia de la extracción, reduce relaciones ambiguas o ruidosas, y proporciona suficiente expresividad semántica para el MVP.
+
+Propósito de las relaciones:
+
+- **Análisis de calidad:** habilitar la detección de inconsistencias internas y elementos huérfanos.
+- **Navegación y exploración:** permitir seguir conexiones entre elementos.
+- **Consultas por lenguaje natural:** enriquecer respuestas con contexto relacional.
+- **Verificación de consistencia:** detectar elementos referenciados pero ausentes.
+
+### Tipos de documentos soportados
+
+El MVP reconoce los siguientes tipos de documentos:
+
+| Tipo | Descripción | Elementos esperados |
+|------|-------------|---------------------|
+| PRD | Documento de requisitos de producto | propósito, usuarios/actores, requisitos funcionales, restricciones, criterios de éxito |
+| Technical Spec | Especificación técnica | propósito, alcance, componentes/conceptos, interfaces, restricciones, decisiones |
+| Policy / Process | Documento de política o proceso | propósito, alcance, actores/roles, reglas, procesos, excepciones |
+| Generic | Cualquier documento | (sin esquema de completitud — ver comportamiento Generic abajo) |
+
+Estos tipos representan las capacidades iniciales de análisis del MVP, no una taxonomía exhaustiva. Tipos adicionales pueden incorporarse en versiones futuras sin modificar la arquitectura de análisis.
+
+### Selección del tipo de documento
+
+El tipo se determina mediante un mecanismo híbrido:
+
+1. El sistema infiere automáticamente el tipo más probable a partir del contenido.
+2. La sugerencia se presenta al usuario para confirmación antes del análisis de calidad.
+3. El usuario puede aceptar, cambiar a otro tipo, o seleccionar "Generic".
+
+### Comportamiento del tipo Generic
+
+El tipo "Generic" soporta todas las capacidades centrales del MVP:
+
+- Generación completa del Knowledge Model (taxonomía completa de 6 tipos de elementos).
+- Extracción de relaciones opcionales entre elementos.
+- Consultas por lenguaje natural sobre el Knowledge Model.
+- Análisis de consistencia interna (detección de contradicciones y ambigüedades).
+
+La única capacidad deshabilitada para "Generic" es la **evaluación de completitud basada en esquema**, ya que no existe una estructura esperada contra la cual comparar. No se reporta "información faltante" para documentos genéricos.
 
 ---
 
@@ -150,6 +202,9 @@ El MVP no incluirá:
 - Knowledge Graph completo (motor de grafos dedicado);
 - análisis multi-documento ni relaciones entre documentos;
 - configuración dinámica de taxonomías;
+- tipos de documentos personalizados por el usuario;
+- vocabulario de relaciones extensible por el usuario;
+- esquemas específicos de dominio (legal, médico, financiero);
 - detección de inconsistencias entre documentos relacionados;
 - análisis de impacto de cambios entre documentos;
 - formato DOCX;
@@ -194,9 +249,13 @@ El MVP será exitoso si demuestra que:
 
 3. El usuario da consentimiento explícito para el procesamiento.
 
-4. El sistema analiza el contenido.
+4. El sistema infiere el tipo de documento y presenta una sugerencia al usuario.
 
-5. La IA identifica elementos relevantes:
+5. El usuario confirma o corrige el tipo de documento (PRD, Technical Spec, Policy/Process, Generic).
+
+6. El sistema analiza el contenido según el tipo confirmado.
+
+7. La IA identifica elementos relevantes:
    - propósito
    - conceptos
    - actores
@@ -204,18 +263,18 @@ El MVP será exitoso si demuestra que:
    - procesos
    - restricciones
 
-6. El sistema genera un Knowledge Model: elementos tipados con relaciones opcionales.
+8. El sistema genera un Knowledge Model: elementos tipados con relaciones opcionales (constrains, participates_in, depends_on, contradicts).
 
-7. El sistema evalúa la calidad documental:
+9. El sistema evalúa la calidad documental según el esquema del tipo confirmado:
    - inconsistencias internas
-   - información faltante según estructura esperada
+   - información faltante según estructura esperada (excepto para Generic)
    - sugerencias de mejora
 
-8. El usuario puede explorar el conocimiento generado y los resultados del análisis de calidad.
+10. El usuario puede explorar el conocimiento generado y los resultados del análisis de calidad.
 
-9. El usuario puede realizar preguntas sobre el documento.
+11. El usuario puede realizar preguntas sobre el documento.
 
-10. El sistema responde utilizando el conocimiento extraído.
+12. El sistema responde utilizando el conocimiento extraído.
 
 ---
 
@@ -224,12 +283,15 @@ El MVP será exitoso si demuestra que:
 ## Must Have
 
 - Cargar documento.
-- Analizar documento.
+- Inferir tipo de documento y presentar sugerencia al usuario.
+- Confirmación del tipo de documento por el usuario antes del análisis de calidad.
+- Analizar documento según el tipo confirmado.
 - Generar Knowledge Model (elementos tipados con relaciones opcionales).
+- Relaciones con vocabulario fijo: constrains, participates_in, depends_on, contradicts.
 - Incluir referencia de evidencia trazable (`source_ref`) en cada elemento.
 - Verificar que la evidencia referenciada existe en el documento original.
 - Detectar inconsistencias internas.
-- Identificar información faltante según estructura esperada.
+- Identificar información faltante según esquema del tipo de documento (excepto Generic).
 - Sugerir mejoras basadas en el Knowledge Model.
 - Consultar mediante IA (respuestas con evidencia trazable).
 - Mostrar resultados.
@@ -239,6 +301,7 @@ El MVP será exitoso si demuestra que:
 - Enviar solo información mínima necesaria al servicio de IA.
 - Retención del contenido limitada a lo operativamente necesario.
 - Capa de abstracción del proveedor de IA.
+- Tipo "Generic" como fallback (todas las capacidades excepto evaluación de completitud).
 
 ## Should Have
 
@@ -255,6 +318,9 @@ El MVP será exitoso si demuestra que:
 
 - Knowledge Graph completo (motor de grafos dedicado).
 - Configuración dinámica de taxonomías.
+- Tipos de documentos personalizados por el usuario.
+- Vocabulario de relaciones extensible por el usuario.
+- Esquemas específicos de dominio (legal, médico, financiero).
 - Análisis multi-documento.
 - Relaciones entre documentos.
 - Comparar documentos.

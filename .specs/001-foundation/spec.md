@@ -1,7 +1,7 @@
 # Spec - Product Foundation
 
-> Version: 0.5
-> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md, ADR-005-privacy-external-processing.md
+> Version: 0.6
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md, ADR-005-privacy-external-processing.md, ADR-006-document-type-schemas.md
 
 ---
 
@@ -37,6 +37,9 @@ No incluye:
 - Knowledge Graph completo (motor de grafos dedicado).
 - Análisis multi-documento ni relaciones entre documentos.
 - Configuración dinámica de taxonomías.
+- Tipos de documentos personalizados por el usuario.
+- Vocabulario de relaciones extensible por el usuario.
+- Esquemas específicos de dominio (legal, médico, financiero).
 - Formato DOCX, OCR, procesamiento de imágenes ni tablas complejas.
 - Procesamiento local o self-hosted de IA.
 - Colaboración, sincronización entre documentos ni control de versiones.
@@ -92,6 +95,16 @@ Como usuario
 Quiero saber qué información falta según la estructura esperada
 
 Para completar el documento con los elementos necesarios.
+
+---
+
+### US-005.1
+
+Como usuario
+
+Quiero confirmar o corregir el tipo de documento que el sistema sugiere
+
+Para asegurar que la evaluación de completitud se realiza contra el esquema correcto.
 
 ---
 
@@ -193,7 +206,23 @@ El sistema debe verificar que la evidencia referenciada en `source_ref` (campo `
 
 ## RF-04
 
-El Knowledge Model puede incluir relaciones opcionales entre elementos cuando el sistema las identifica con suficiente confianza.
+El Knowledge Model puede incluir relaciones opcionales entre elementos utilizando el siguiente vocabulario fijo:
+
+| Tipo | Semántica | Dirección |
+|------|-----------|-----------|
+| constrains | Un elemento restringe o limita a otro | dirigida |
+| participates_in | Un actor participa en un proceso o contexto | dirigida |
+| depends_on | Un elemento depende de otro para ser válido | dirigida |
+| contradicts | Un elemento contradice o conflictúa con otro | bidireccional |
+
+Las relaciones se capturan cuando el sistema las identifica con suficiente confianza. El vocabulario acotado mantiene el Knowledge Model simple, mejora la consistencia de la extracción, reduce relaciones ambiguas o ruidosas, simplifica el diseño de prompts, y proporciona suficiente expresividad semántica para el MVP.
+
+Propósito arquitectónico de las relaciones:
+
+- **Análisis de calidad:** habilitar la detección de inconsistencias internas y elementos huérfanos.
+- **Navegación y exploración:** permitir al usuario seguir conexiones entre elementos.
+- **Consultas por lenguaje natural:** enriquecer respuestas con contexto relacional.
+- **Verificación de consistencia:** detectar elementos referenciados pero ausentes del Knowledge Model.
 
 ---
 
@@ -206,6 +235,36 @@ El sistema debe detectar inconsistencias internas del documento (contradicciones
 ## RF-06
 
 El sistema debe identificar información faltante según la estructura esperada para el tipo de documento.
+
+### Tipos de documentos soportados
+
+| Tipo | Descripción | Elementos esperados |
+|------|-------------|---------------------|
+| PRD | Documento de requisitos de producto | propósito, usuarios/actores, requisitos funcionales, restricciones, criterios de éxito |
+| Technical Spec | Especificación técnica | propósito, alcance, componentes/conceptos, interfaces, restricciones, decisiones |
+| Policy / Process | Documento de política o proceso | propósito, alcance, actores/roles, reglas, procesos, excepciones |
+| Generic | Cualquier documento | (sin esquema de completitud) |
+
+Estos tipos representan las capacidades iniciales de análisis del MVP, no una taxonomía exhaustiva. Tipos adicionales pueden incorporarse en versiones futuras sin modificar la arquitectura de análisis. Los esquemas son fijos en el MVP; la estructura permite extensión futura mediante tipos representados como strings.
+
+### Selección del tipo de documento
+
+El tipo se determina mediante un mecanismo híbrido:
+
+1. El sistema infiere automáticamente el tipo más probable a partir del contenido del documento.
+2. La sugerencia se presenta al usuario para confirmación antes del análisis de calidad.
+3. El usuario puede aceptar la sugerencia, cambiar a otro tipo, o seleccionar "Generic".
+
+### Comportamiento del tipo Generic
+
+El tipo "Generic" soporta todas las capacidades centrales del MVP:
+
+- Generación completa del Knowledge Model (taxonomía completa de 6 tipos de elementos).
+- Extracción de relaciones opcionales.
+- Consultas por lenguaje natural.
+- Análisis de consistencia interna (contradicciones y ambigüedades).
+
+La única capacidad intencionalmente deshabilitada es la **evaluación de completitud basada en esquema**, ya que no existe una estructura esperada contra la cual comparar. No se reporta "información faltante" para documentos genéricos.
 
 ---
 
@@ -303,9 +362,29 @@ Entonces el sistema las identifica y las presenta al usuario como inconsistencia
 
 Dado un Knowledge Model generado
 
-Cuando el documento carece de elementos esperados según su tipo
+Cuando el documento carece de elementos esperados según su tipo (excepto Generic)
 
 Entonces el sistema identifica la información faltante.
+
+---
+
+## CA-03.1
+
+Dado un documento de tipo "Generic"
+
+Cuando el sistema realiza el análisis de calidad
+
+Entonces no reporta "información faltante" (no existe esquema de referencia), pero sí detecta inconsistencias internas y genera sugerencias.
+
+---
+
+## CA-03.2
+
+Dado un documento cargado
+
+Cuando el sistema inicia el análisis
+
+Entonces infiere el tipo de documento y presenta la sugerencia al usuario para confirmación antes de proceder con la evaluación de calidad.
 
 ---
 
@@ -343,6 +422,9 @@ Para el MVP:
 - Encoding: UTF-8 para Markdown/TXT; nativo para PDF.
 - Idiomas: español e inglés.
 - La taxonomía de elementos es fija (no configurable por el usuario).
+- Los tipos de documentos soportados son fijos: PRD, Technical Spec, Policy/Process, Generic.
+- Los esquemas esperados por tipo son fijos (no configurables por el usuario en runtime).
+- El vocabulario de relaciones es fijo: constrains, participates_in, depends_on, contradicts.
 - El Knowledge Model se almacena como elementos tipados con relaciones opcionales (no como Knowledge Graph completo).
 - No se soporta DOCX, OCR, procesamiento de imágenes ni tablas complejas.
 - El análisis de documentos se realiza mediante un servicio externo de IA, con consentimiento explícito del usuario.
@@ -364,6 +446,9 @@ El MVP no intenta proporcionar:
 - Framework de evaluación completo.
 - Output textual idéntico entre ejecuciones (solo consistencia estructural).
 - Confidence scores por elemento.
+- Tipos de documentos personalizados por el usuario.
+- Vocabulario de relaciones extensible por el usuario.
+- Esquemas específicos de dominio (legal, médico, financiero).
 - Procesamiento local o self-hosted de IA.
 - Cumplimiento de regulaciones específicas de industria.
 - Auditoría detallada de acceso a datos.
@@ -388,6 +473,7 @@ Estas preguntas deberán resolverse durante la etapa de diseño:
 - ¿Será necesario utilizar RAG para la consulta por lenguaje natural?
 - ¿Cuál es la duración del almacenamiento temporal del Knowledge Model?
 - ¿Cómo se visualizará el Knowledge Model al usuario?
-- ¿Qué tipos de relaciones se soportarán en el MVP?
-- ¿Qué estructura de referencia define los "elementos esperados" por tipo de documento?
 - ¿Cómo se presenta visualmente un elemento marcado como "no-verificado"?
+- ¿Cuál es el umbral de confianza para sugerir un tipo vs. defaultear a "Generic"?
+- ¿La inferencia de tipo y la extracción ocurren en una o dos llamadas al LLM?
+- ¿Cómo se almacenan los esquemas de tipos de documentos (archivos de configuración, constantes en código)?
