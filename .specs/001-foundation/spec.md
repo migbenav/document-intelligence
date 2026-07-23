@@ -273,6 +273,7 @@ La arquitectura del pipeline de análisis debe incluir una capa de abstracción 
 - **Trazabilidad de evidencia:** Todo elemento generado y toda respuesta a consultas debe poder trazarse hasta el documento original mediante `source_ref`.
 - **Verificación de referencias:** El sistema verifica que la evidencia citada existe en el documento fuente como mecanismo de trust del MVP.
 - **Privacidad por diseño:** El pipeline de análisis se comunica con el servicio de IA a través de una capa de abstracción del proveedor. El sistema opera bajo principios de transparencia (el usuario sabe qué ocurre con sus datos), consentimiento (el usuario autoriza el procesamiento), minimización (solo se envía lo necesario) y retención limitada (el contenido no se retiene más allá de lo operativamente necesario).
+- **Cifrado en tránsito (Should Have):** El documento debe cifrarse durante la transmisión al servicio externo de IA.
 
 ---
 
@@ -362,6 +363,7 @@ El MVP no intenta proporcionar:
 - Fine-tuning del modelo basado en feedback del usuario.
 - Framework de evaluación completo.
 - Output textual idéntico entre ejecuciones (solo consistencia estructural).
+- Confidence scores por elemento.
 - Procesamiento local o self-hosted de IA.
 - Cumplimiento de regulaciones específicas de industria.
 - Auditoría detallada de acceso a datos.

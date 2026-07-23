@@ -190,9 +190,13 @@ El MVP será exitoso si demuestra que:
 
 1. El usuario ingresa un documento.
 
-2. El sistema analiza el contenido.
+2. El sistema informa al usuario que el contenido será procesado por un servicio externo de IA.
 
-3. La IA identifica elementos relevantes:
+3. El usuario da consentimiento explícito para el procesamiento.
+
+4. El sistema analiza el contenido.
+
+5. La IA identifica elementos relevantes:
    - propósito
    - conceptos
    - actores
@@ -200,18 +204,18 @@ El MVP será exitoso si demuestra que:
    - procesos
    - restricciones
 
-4. El sistema genera un Knowledge Model: elementos tipados con relaciones opcionales.
+6. El sistema genera un Knowledge Model: elementos tipados con relaciones opcionales.
 
-5. El sistema evalúa la calidad documental:
+7. El sistema evalúa la calidad documental:
    - inconsistencias internas
    - información faltante según estructura esperada
    - sugerencias de mejora
 
-6. El usuario puede explorar el conocimiento generado y los resultados del análisis de calidad.
+8. El usuario puede explorar el conocimiento generado y los resultados del análisis de calidad.
 
-7. El usuario puede realizar preguntas sobre el documento.
+9. El usuario puede realizar preguntas sobre el documento.
 
-8. El sistema responde utilizando el conocimiento extraído.
+10. El sistema responde utilizando el conocimiento extraído.
 
 ---
 
