@@ -55,12 +55,26 @@ Construir una plataforma que represente el conocimiento contenido en los documen
 
 # Alcance del MVP
 
-El MVP permitirá:
+> Decisión documentada en: decisions/ADR-001-mvp-scope.md
 
-- analizar documentos;
-- construir un modelo básico de conocimiento;
-- detectar relaciones e inconsistencias;
-- responder preguntas sobre el contenido;
-- demostrar el potencial de la plataforma.
+El MVP se centra en el análisis de calidad documental sobre un único documento:
+
+- analizar un documento y construir un modelo de conocimiento estructurado;
+- detectar inconsistencias internas (contradicciones y ambigüedades);
+- identificar información faltante según la estructura esperada del tipo de documento;
+- ofrecer sugerencias de mejora basadas en el conocimiento extraído;
+- responder preguntas sobre el contenido mediante lenguaje natural.
 
 No busca reemplazar un editor de texto ni implementar una plataforma documental completa.
+
+---
+
+# Visión a futuro (fuera del MVP)
+
+Las siguientes capacidades forman parte de la visión del producto pero no del primer entregable:
+
+- análisis multi-documento y relaciones entre documentos;
+- detección de inconsistencias entre documentos relacionados;
+- análisis de impacto de cambios;
+- colaboración y edición;
+- integraciones externas.

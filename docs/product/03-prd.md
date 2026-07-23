@@ -6,9 +6,11 @@
 
 # Objetivo
 
-Construir un MVP de una plataforma de inteligencia documental que permita transformar documentos complejos en una representación de conocimiento que pueda ser analizada y consultada mediante inteligencia artificial.
+> Decisión documentada en: decisions/ADR-001-mvp-scope.md
 
-El MVP debe demostrar que un documento puede ser comprendido más allá de su contenido textual, identificando elementos relevantes, relaciones e inconsistencias.
+Construir un MVP de una plataforma de inteligencia documental que permita transformar un documento complejo en una representación de conocimiento estructurado que pueda ser analizada y consultada mediante inteligencia artificial.
+
+El MVP debe demostrar que un documento puede ser comprendido más allá de su contenido textual, identificando elementos relevantes, inconsistencias internas, información faltante y oportunidades de mejora.
 
 ---
 
@@ -35,8 +37,10 @@ El sistema analiza su contenido y genera una representación estructurada que pe
 - entender el propósito del documento;
 - identificar conceptos importantes;
 - encontrar reglas y restricciones;
-- consultar información mediante IA;
-- detectar posibles problemas de consistencia.
+- detectar inconsistencias internas (contradicciones y ambigüedades);
+- identificar información faltante según la estructura esperada;
+- obtener sugerencias de mejora;
+- consultar información mediante IA.
 
 ---
 
@@ -78,13 +82,13 @@ Ejemplos:
 
 ---
 
-## C4. Detección de inconsistencias
+## C4. Análisis de calidad documental
 
-El sistema identifica posibles:
+El sistema evalúa la calidad del documento basándose en el conocimiento extraído:
 
-- contradicciones;
-- información duplicada;
-- elementos faltantes.
+- detecta inconsistencias internas: contradicciones y ambigüedades dentro del documento;
+- identifica información faltante según la estructura esperada para el tipo de documento;
+- genera sugerencias de mejora.
 
 ---
 
@@ -98,6 +102,9 @@ El usuario puede interactuar con el conocimiento generado utilizando lenguaje na
 
 El MVP no incluirá:
 
+- análisis multi-documento ni relaciones entre documentos;
+- detección de inconsistencias entre documentos relacionados;
+- análisis de impacto de cambios entre documentos;
 - edición colaborativa;
 - control documental empresarial;
 - gestión avanzada de permisos;
@@ -113,8 +120,9 @@ El MVP será exitoso si demuestra que:
 
 - un usuario puede comprender un documento complejo más rápido;
 - la IA puede explicar el contenido basado en conocimiento extraído;
-- se pueden identificar relaciones o problemas que serían difíciles de encontrar manualmente;
-- la documentación puede evolucionar utilizando una representación estructurada.
+- se pueden identificar inconsistencias internas que serían difíciles de encontrar manualmente;
+- el sistema detecta información faltante relevante para el tipo de documento;
+- las sugerencias de mejora aportan valor al usuario.
 
 ---
 
@@ -129,15 +137,21 @@ El MVP será exitoso si demuestra que:
    - conceptos
    - actores
    - reglas
-   - relaciones
+   - procesos
+   - restricciones
 
 4. El sistema genera una representación estructurada del conocimiento.
 
-5. El usuario puede explorar el conocimiento generado.
+5. El sistema evalúa la calidad documental:
+   - inconsistencias internas
+   - información faltante según estructura esperada
+   - sugerencias de mejora
 
-6. El usuario puede realizar preguntas sobre el documento.
+6. El usuario puede explorar el conocimiento generado y los resultados del análisis de calidad.
 
-7. El sistema responde utilizando la información analizada.
+7. El usuario puede realizar preguntas sobre el documento.
+
+8. El sistema responde utilizando el conocimiento extraído.
 
 ---
 
@@ -147,24 +161,29 @@ El MVP será exitoso si demuestra que:
 
 - Cargar documento.
 - Analizar documento.
-- Extraer conocimiento básico.
+- Extraer conocimiento estructurado.
+- Detectar inconsistencias internas.
+- Identificar información faltante según estructura esperada.
+- Sugerir mejoras basadas en el conocimiento extraído.
 - Consultar mediante IA.
 - Mostrar resultados.
 
 ## Should Have
 
-- Detectar duplicidades.
-- Detectar contradicciones.
-- Mostrar relaciones.
+- Mostrar relaciones internas entre conceptos del documento.
+- Permitir feedback del usuario sobre los resultados.
 
 ## Could Have
 
-- Comparar documentos.
-- Analizar impacto de cambios.
-- Sincronizar documentos.
+- Taxonomía configurable por tipo de documento.
+- Exportar conocimiento extraído.
 
 ## Not Now
 
+- Análisis multi-documento.
+- Relaciones entre documentos.
+- Comparar documentos.
+- Analizar impacto de cambios entre documentos.
 - Colaboración.
 - Control de versiones.
 - Integraciones externas.
