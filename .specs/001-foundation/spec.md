@@ -1,7 +1,7 @@
 # Spec - Product Foundation
 
-> Version: 0.4
-> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md
+> Version: 0.5
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md, ADR-005-privacy-external-processing.md
 
 ---
 
@@ -38,6 +38,7 @@ No incluye:
 - Análisis multi-documento ni relaciones entre documentos.
 - Configuración dinámica de taxonomías.
 - Formato DOCX, OCR, procesamiento de imágenes ni tablas complejas.
+- Procesamiento local o self-hosted de IA.
 - Colaboración, sincronización entre documentos ni control de versiones.
 
 ---
@@ -232,6 +233,36 @@ El sistema mostrará el Knowledge Model y los resultados del análisis de calida
 
 ---
 
+## RF-11
+
+El sistema debe informar al usuario, antes de iniciar el análisis, que el contenido del documento será procesado por un servicio externo de IA.
+
+---
+
+## RF-12
+
+El usuario debe dar consentimiento explícito antes de que el sistema envíe el contenido del documento al servicio de IA. Sin consentimiento, no se realiza el análisis.
+
+---
+
+## RF-13
+
+El sistema debe enviar al servicio de IA únicamente la información mínima necesaria para el análisis (texto del documento y prompts del sistema). No se envía metadata del usuario, información de cuenta ni historial de uso.
+
+---
+
+## RF-14
+
+El contenido del documento original no se retiene más allá de lo operativamente necesario para completar el análisis y permitir la interacción del usuario con los resultados durante su sesión. El Knowledge Model generado (representación derivada) puede persistir según los requisitos de funcionalidad.
+
+---
+
+## RF-15
+
+La arquitectura del pipeline de análisis debe incluir una capa de abstracción del proveedor de IA que permita reemplazar el backend de procesamiento sin modificar el pipeline de análisis ni el resto del sistema.
+
+---
+
 # Requisitos No Funcionales
 
 - **Reproducibilidad acotada:** El sistema usa parámetros de generación controlados (temperatura mínima cuando esté disponible), tracking fijo de versión del modelo, y prompts versionados para maximizar consistencia. Dado el mismo documento, la misma configuración del modelo y la misma versión de prompts, el sistema produce: los mismos elementos principales de conocimiento, los mismos hallazgos críticos y un Knowledge Model estructuralmente comparable. No se garantiza output textual idéntico.
@@ -241,6 +272,7 @@ El sistema mostrará el Knowledge Model y los resultados del análisis de calida
 - La capa de ingesta debe estar desacoplada del motor de análisis, permitiendo agregar nuevos formatos como adaptadores independientes.
 - **Trazabilidad de evidencia:** Todo elemento generado y toda respuesta a consultas debe poder trazarse hasta el documento original mediante `source_ref`.
 - **Verificación de referencias:** El sistema verifica que la evidencia citada existe en el documento fuente como mecanismo de trust del MVP.
+- **Privacidad por diseño:** El pipeline de análisis se comunica con el servicio de IA a través de una capa de abstracción del proveedor. El sistema opera bajo principios de transparencia (el usuario sabe qué ocurre con sus datos), consentimiento (el usuario autoriza el procesamiento), minimización (solo se envía lo necesario) y retención limitada (el contenido no se retiene más allá de lo operativamente necesario).
 
 ---
 
@@ -312,6 +344,8 @@ Para el MVP:
 - La taxonomía de elementos es fija (no configurable por el usuario).
 - El Knowledge Model se almacena como elementos tipados con relaciones opcionales (no como Knowledge Graph completo).
 - No se soporta DOCX, OCR, procesamiento de imágenes ni tablas complejas.
+- El análisis de documentos se realiza mediante un servicio externo de IA, con consentimiento explícito del usuario.
+- El contenido del documento no se retiene más allá de lo operativamente necesario.
 - No habrá autenticación.
 - No existirá edición colaborativa.
 - No se mantendrá historial de versiones.
@@ -328,8 +362,12 @@ El MVP no intenta proporcionar:
 - Fine-tuning del modelo basado en feedback del usuario.
 - Framework de evaluación completo.
 - Output textual idéntico entre ejecuciones (solo consistencia estructural).
+- Procesamiento local o self-hosted de IA.
+- Cumplimiento de regulaciones específicas de industria.
+- Auditoría detallada de acceso a datos.
+- Selección de proveedor de IA por parte del usuario.
 
-El MVP se centra en transparencia y verificabilidad: todo resultado puede trazarse hasta el documento original para que el usuario evalúe su corrección.
+El MVP se centra en transparencia y verificabilidad: todo resultado puede trazarse hasta el documento original para que el usuario evalúe su corrección. El procesamiento externo se realiza con consentimiento informado y bajo principios de minimización y retención limitada.
 
 ---
 

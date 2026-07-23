@@ -1,7 +1,7 @@
 # Product Requirements Document
 
-> Version: 0.4
-> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md
+> Version: 0.5
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md, ADR-005-privacy-external-processing.md
 
 ---
 
@@ -131,6 +131,18 @@ El MVP no garantiza que el LLM sea correcto el 100% del tiempo. Garantiza que el
 
 ---
 
+## C7. Privacidad y procesamiento de datos
+
+El MVP procesa documentos mediante un servicio externo de IA. El sistema opera bajo los siguientes principios de privacidad:
+
+- **Transparencia:** El usuario es informado, antes de iniciar el análisis, de que el contenido del documento será procesado por un servicio externo de IA.
+- **Consentimiento:** El usuario debe autorizar explícitamente el procesamiento. Sin consentimiento, no se realiza el análisis.
+- **Minimización:** Solo se envía al servicio de IA la información estrictamente necesaria para el análisis (texto del documento y prompts del sistema).
+- **Retención limitada:** El contenido del documento original no se retiene más allá de lo operativamente necesario para completar el análisis y permitir la interacción durante la sesión.
+- **Abstracción del proveedor:** La arquitectura incluye una capa de abstracción que permite reemplazar el backend de procesamiento de IA sin modificar el pipeline de análisis, habilitando opciones de procesamiento local o self-hosted en iteraciones futuras.
+
+---
+
 # Fuera de alcance
 
 El MVP no incluirá:
@@ -148,6 +160,10 @@ El MVP no incluirá:
 - edición directa del Knowledge Model por el usuario;
 - fine-tuning del modelo basado en feedback;
 - framework de evaluación completo;
+- procesamiento local o self-hosted de IA;
+- selección de proveedor de IA por parte del usuario;
+- cumplimiento de regulaciones específicas de industria;
+- auditoría detallada de acceso a datos;
 - edición colaborativa;
 - control documental empresarial;
 - gestión avanzada de permisos;
@@ -214,11 +230,17 @@ El MVP será exitoso si demuestra que:
 - Consultar mediante IA (respuestas con evidencia trazable).
 - Mostrar resultados.
 - Parámetros de generación controlados y prompts versionados.
+- Informar al usuario sobre procesamiento externo antes del análisis.
+- Consentimiento explícito del usuario para procesamiento externo.
+- Enviar solo información mínima necesaria al servicio de IA.
+- Retención del contenido limitada a lo operativamente necesario.
+- Capa de abstracción del proveedor de IA.
 
 ## Should Have
 
 - Mostrar relaciones internas entre conceptos del documento.
 - Feedback pasivo: permitir al usuario marcar un elemento como incorrecto o irrelevante (sin edición directa del Knowledge Model ni mejora automática del sistema).
+- Cifrado del documento en tránsito hacia el servicio de IA.
 
 ## Could Have
 
@@ -237,6 +259,9 @@ El MVP será exitoso si demuestra que:
 - Edición directa del Knowledge Model.
 - Fine-tuning basado en feedback del usuario.
 - Capa de validación completa.
+- Procesamiento local o self-hosted de IA.
+- Selección de proveedor de IA por el usuario.
+- Cumplimiento de regulaciones específicas de industria.
 - Colaboración.
 - Control de versiones.
 - Integraciones externas.
