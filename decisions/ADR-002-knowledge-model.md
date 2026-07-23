@@ -1,4 +1,4 @@
-# ADR-002 — Knowledge Model
+# ADR-002 — Modelo de representación del conocimiento (Knowledge Model)
 
 > Estado: **Accepted**
 > Fecha: 2026-07-23
@@ -256,9 +256,39 @@ Para el MVP se recomienda una taxonomía fija. La configurabilidad por tipo de d
 
 # Decisión final
 
-> **Estado: Pendiente de aprobación humana.**
->
-> Una vez aprobada, los documentos afectados deben actualizarse:
->
-> - `.specs/001-foundation/spec.md` — incorporar la taxonomía unificada en RF-03 y documentar la estructura del modelo.
-> - `docs/product/03-prd.md` — confirmar que C2 y la spec están alineados en los elementos a extraer.
+**Decisión aprobada: Alternativa 3 — Modelo híbrido: elementos tipados con relaciones opcionales.**
+
+## Resumen de la decisión
+
+El Knowledge Model del MVP se representa como una colección de elementos tipados con relaciones opcionales entre ellos. Cada elemento tiene un ID único, un tipo de la taxonomía fija, contenido textual, y una referencia de evidencia flexible (`source_ref`) que permite trazarlo hasta el documento original.
+
+## Taxonomía aprobada (fija en el MVP)
+
+- Propósito
+- Conceptos
+- Actores
+- Reglas
+- Procesos
+- Restricciones
+
+La taxonomía es fija para el MVP. La estructura utiliza tipos extensibles (strings) que permiten agregar configurabilidad por tipo de documento en iteraciones futuras sin romper el esquema.
+
+## Relaciones
+
+Las relaciones entre elementos son opcionales. Se capturan cuando el sistema las identifica con suficiente confianza. Los tipos de relaciones soportados en el MVP se definirán durante la etapa de diseño.
+
+## Análisis de calidad
+
+El resultado del análisis de calidad (inconsistencias internas, información faltante, sugerencias de mejora) se modela como una sección derivada del Knowledge Model, separada de los elementos extraídos.
+
+## Referencia de evidencia (source_ref)
+
+Cada elemento incluye un campo `source_ref` definido como una referencia de evidencia flexible que contiene la información disponible según el formato del documento de origen (document_id, page, section, chunk_id, evidence text span). No se asumen referencias basadas en líneas. La definición detallada de `source_ref` fue refinada en ADR-004.
+
+## Documentos actualizados
+
+Los siguientes documentos fueron actualizados para reflejar esta decisión:
+
+- `.specs/001-foundation/spec.md` — taxonomía unificada en RF-03, estructura del modelo documentada.
+- `docs/product/03-prd.md` — C2 alineado con la taxonomía y el concepto de Knowledge Model.
+

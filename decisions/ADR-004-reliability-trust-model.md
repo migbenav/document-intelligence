@@ -188,7 +188,7 @@ Muy alta. Las correcciones del usuario son gold-standard data para evaluación y
 
 # Decisión final
 
-## Decisión aprobada: Alternativa 1 — Trust by Evidence (citations + bounded reproducibility)
+**Decisión aprobada: Alternativa 1 — Trust by Evidence (citations + bounded reproducibility)**
 
 El MVP se centra en la trazabilidad de evidencia como mecanismo de confianza. No intenta garantizar que el LLM sea correcto, sino que todo resultado pueda ser verificado por el usuario trazándolo hasta el documento original.
 
