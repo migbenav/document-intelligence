@@ -1,7 +1,7 @@
 # Product Requirements Document
 
-> Version: 0.3
-> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md
+> Version: 0.4
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md
 
 ---
 
@@ -85,7 +85,7 @@ El sistema construye un Knowledge Model identificando los siguientes elementos (
 - procesos;
 - restricciones.
 
-Cada elemento incluye un tipo, contenido textual y referencia a su ubicación en el documento fuente. Las relaciones entre elementos se capturan de forma opcional cuando el sistema las identifica con suficiente confianza.
+Cada elemento incluye un tipo, contenido textual y una referencia de evidencia trazable (`source_ref`) que permite verificar su origen en el documento fuente. Las relaciones entre elementos se capturan de forma opcional cuando el sistema las identifica con suficiente confianza.
 
 ---
 
@@ -115,7 +115,19 @@ El sistema evalúa la calidad del documento basándose en el Knowledge Model gen
 
 ## C5. Asistencia mediante IA
 
-El usuario puede interactuar con el Knowledge Model utilizando lenguaje natural.
+El usuario puede interactuar con el Knowledge Model utilizando lenguaje natural. Las respuestas incluyen evidencia trazable al documento original para que el usuario pueda verificar su corrección.
+
+---
+
+## C6. Modelo de confianza (Trust by Evidence)
+
+El MVP proporciona transparencia y verificabilidad, no una garantía de precisión absoluta del LLM:
+
+- Cada elemento del Knowledge Model incluye una referencia de evidencia (`source_ref`) que lo traza hasta el documento original.
+- El sistema verifica que la evidencia referenciada existe realmente en el documento. Los elementos no-verificables se señalan.
+- El sistema usa parámetros de generación controlados, tracking de versión del modelo y prompts versionados para maximizar consistencia entre ejecuciones (reproducibilidad acotada a estructura y hallazgos principales, no texto idéntico).
+
+El MVP no garantiza que el LLM sea correcto el 100% del tiempo. Garantiza que el usuario puede verificar todo resultado.
 
 ---
 
@@ -132,6 +144,10 @@ El MVP no incluirá:
 - OCR para PDFs escaneados;
 - procesamiento de imágenes dentro de documentos;
 - tablas complejas (multi-nivel, celdas combinadas);
+- garantía de precisión del 100% del LLM;
+- edición directa del Knowledge Model por el usuario;
+- fine-tuning del modelo basado en feedback;
+- framework de evaluación completo;
 - edición colaborativa;
 - control documental empresarial;
 - gestión avanzada de permisos;
@@ -146,10 +162,11 @@ El MVP no incluirá:
 El MVP será exitoso si demuestra que:
 
 - un usuario puede comprender un documento complejo más rápido;
-- la IA puede explicar el contenido basado en conocimiento extraído;
+- la IA puede explicar el contenido basado en conocimiento extraído, con evidencia trazable al documento original;
 - se pueden identificar inconsistencias internas que serían difíciles de encontrar manualmente;
 - el sistema detecta información faltante relevante para el tipo de documento;
-- las sugerencias de mejora aportan valor al usuario.
+- las sugerencias de mejora aportan valor al usuario;
+- el usuario puede verificar el origen de cada elemento del Knowledge Model mediante su referencia de evidencia.
 
 ---
 
@@ -189,16 +206,19 @@ El MVP será exitoso si demuestra que:
 - Cargar documento.
 - Analizar documento.
 - Generar Knowledge Model (elementos tipados con relaciones opcionales).
+- Incluir referencia de evidencia trazable (`source_ref`) en cada elemento.
+- Verificar que la evidencia referenciada existe en el documento original.
 - Detectar inconsistencias internas.
 - Identificar información faltante según estructura esperada.
 - Sugerir mejoras basadas en el Knowledge Model.
-- Consultar mediante IA.
+- Consultar mediante IA (respuestas con evidencia trazable).
 - Mostrar resultados.
+- Parámetros de generación controlados y prompts versionados.
 
 ## Should Have
 
 - Mostrar relaciones internas entre conceptos del documento.
-- Permitir feedback del usuario sobre los resultados.
+- Feedback pasivo: permitir al usuario marcar un elemento como incorrecto o irrelevante (sin edición directa del Knowledge Model ni mejora automática del sistema).
 
 ## Could Have
 
@@ -213,6 +233,10 @@ El MVP será exitoso si demuestra que:
 - Relaciones entre documentos.
 - Comparar documentos.
 - Analizar impacto de cambios entre documentos.
+- Confidence scores por elemento.
+- Edición directa del Knowledge Model.
+- Fine-tuning basado en feedback del usuario.
+- Capa de validación completa.
 - Colaboración.
 - Control de versiones.
 - Integraciones externas.

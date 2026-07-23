@@ -1,7 +1,7 @@
 # Spec - Product Foundation
 
-> Version: 0.3
-> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md
+> Version: 0.4
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md, ADR-004-reliability-trust-model.md
 
 ---
 
@@ -110,7 +110,19 @@ Como usuario
 
 Quiero realizar preguntas sobre el documento
 
-Para obtener respuestas basadas en el Knowledge Model generado.
+Para obtener respuestas basadas en el Knowledge Model generado, con evidencia trazable al documento original.
+
+---
+
+### US-008 (Should Have)
+
+Como usuario
+
+Quiero poder marcar un elemento del Knowledge Model como incorrecto o irrelevante
+
+Para señalar resultados que no reflejan el contenido del documento.
+
+Nota: el feedback no incluye edición directa del Knowledge Model, flujos de corrección manual ni mejora automática del sistema.
 
 ---
 
@@ -154,7 +166,27 @@ El Knowledge Model debe contener elementos tipados con la siguiente taxonomía f
 - procesos
 - restricciones
 
-Cada elemento incluye: tipo, nombre, contenido textual y referencia a su ubicación en el documento fuente.
+Cada elemento incluye: tipo, nombre, contenido textual y una referencia de evidencia (`source_ref`) que permite trazar el elemento hasta el documento original.
+
+---
+
+## RF-03.1
+
+Cada elemento del Knowledge Model debe incluir un campo `source_ref` (referencia de evidencia flexible) con la información disponible para su trazabilidad:
+
+- **document_id:** identificador del documento analizado.
+- **page:** número de página (cuando esté disponible, principalmente PDF).
+- **section:** sección o capítulo (cuando esté disponible, principalmente Markdown headings).
+- **chunk_id:** identificador del fragmento de texto procesado.
+- **evidence:** texto span o extracto textual del documento fuente que respalda el elemento.
+
+El formato de la referencia se adapta al tipo de documento de origen. No se asumen referencias basadas en líneas.
+
+---
+
+## RF-03.2
+
+El sistema debe verificar que la evidencia referenciada en `source_ref` (campo `evidence`) existe realmente en el documento original. Si una referencia no puede ser verificada, el elemento se marca como no-verificado.
 
 ---
 
@@ -190,7 +222,7 @@ El sistema debe almacenar temporalmente el Knowledge Model y los resultados del 
 
 ## RF-09
 
-El usuario podrá consultar el Knowledge Model mediante preguntas en lenguaje natural.
+El usuario podrá consultar el Knowledge Model mediante preguntas en lenguaje natural. Las respuestas deben incluir evidencia trazable al documento original (source_ref).
 
 ---
 
@@ -202,11 +234,13 @@ El sistema mostrará el Knowledge Model y los resultados del análisis de calida
 
 # Requisitos No Funcionales
 
-- El análisis debe ser reproducible.
+- **Reproducibilidad acotada:** El sistema usa parámetros de generación controlados (temperatura mínima cuando esté disponible), tracking fijo de versión del modelo, y prompts versionados para maximizar consistencia. Dado el mismo documento, la misma configuración del modelo y la misma versión de prompts, el sistema produce: los mismos elementos principales de conocimiento, los mismos hallazgos críticos y un Knowledge Model estructuralmente comparable. No se garantiza output textual idéntico.
 - La arquitectura debe permitir incorporar nuevos tipos de análisis.
 - La solución debe ser modular.
 - Debe ser posible reemplazar el proveedor del LLM sin modificar el resto del sistema.
 - La capa de ingesta debe estar desacoplada del motor de análisis, permitiendo agregar nuevos formatos como adaptadores independientes.
+- **Trazabilidad de evidencia:** Todo elemento generado y toda respuesta a consultas debe poder trazarse hasta el documento original mediante `source_ref`.
+- **Verificación de referencias:** El sistema verifica que la evidencia citada existe en el documento fuente como mecanismo de trust del MVP.
 
 ---
 
@@ -218,7 +252,7 @@ Dado un documento válido
 
 Cuando el usuario inicia el análisis
 
-Entonces el sistema genera un Knowledge Model con elementos tipados según la taxonomía definida.
+Entonces el sistema genera un Knowledge Model con elementos tipados según la taxonomía definida, cada uno con una referencia de evidencia (`source_ref`) verificable contra el documento original.
 
 ---
 
@@ -228,7 +262,7 @@ Dado un Knowledge Model generado
 
 Cuando existen contradicciones o ambigüedades en el documento
 
-Entonces el sistema las identifica y las presenta al usuario como inconsistencias internas.
+Entonces el sistema las identifica y las presenta al usuario como inconsistencias internas, con evidencia trazable.
 
 ---
 
@@ -248,13 +282,21 @@ Dado un Knowledge Model generado
 
 Cuando el usuario realiza una pregunta
 
-Entonces la respuesta utiliza el conocimiento del modelo.
+Entonces la respuesta utiliza el conocimiento del modelo e incluye evidencia trazable al documento fuente.
 
 ---
 
 ## CA-05
 
 El usuario puede visualizar los elementos del Knowledge Model y los resultados del análisis de calidad.
+
+---
+
+## CA-06
+
+Dado un elemento del Knowledge Model cuya evidencia no puede ser verificada en el documento original
+
+Entonces el sistema marca el elemento como no-verificado.
 
 ---
 
@@ -276,6 +318,21 @@ Para el MVP:
 
 ---
 
+# Non-goals del MVP
+
+El MVP no intenta proporcionar:
+
+- Garantía de precisión del 100% del LLM.
+- Validación automatizada completa de todo el razonamiento.
+- Capacidades de edición del Knowledge Model por el usuario.
+- Fine-tuning del modelo basado en feedback del usuario.
+- Framework de evaluación completo.
+- Output textual idéntico entre ejecuciones (solo consistencia estructural).
+
+El MVP se centra en transparencia y verificabilidad: todo resultado puede trazarse hasta el documento original para que el usuario evalúe su corrección.
+
+---
+
 # Riesgos
 
 - El LLM podría interpretar incorrectamente ciertos documentos.
@@ -293,3 +350,4 @@ Estas preguntas deberán resolverse durante la etapa de diseño:
 - ¿Cómo se visualizará el Knowledge Model al usuario?
 - ¿Qué tipos de relaciones se soportarán en el MVP?
 - ¿Qué estructura de referencia define los "elementos esperados" por tipo de documento?
+- ¿Cómo se presenta visualmente un elemento marcado como "no-verificado"?
