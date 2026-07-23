@@ -1,7 +1,7 @@
 # Product Requirements Document
 
-> Version: 0.2
-> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md
+> Version: 0.3
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md
 
 ---
 
@@ -50,6 +50,23 @@ El sistema analiza su contenido y genera una representación estructurada que pe
 ## C1. Ingreso de documentos
 
 El usuario puede proporcionar documentos para análisis.
+
+Formatos soportados en el MVP:
+
+- Markdown (.md)
+- Texto plano (.txt)
+- PDF (.pdf)
+
+Restricciones:
+
+- Tamaño máximo: 1 MB (Markdown/TXT), 10 MB (PDF).
+- Encoding: UTF-8 para Markdown y texto plano; nativo para PDF.
+- Idiomas: español e inglés.
+- Imágenes: se ignoran.
+- Tablas simples: se extraen como texto. Tablas complejas: se ignoran.
+- PDFs escaneados (imagen): no soportados (sin OCR).
+
+La capa de ingesta es un módulo desacoplado del motor de análisis. Su responsabilidad es transformar el documento original en una representación intermedia de texto estructurado sobre la cual opera el análisis.
 
 Resultado esperado:
 
@@ -111,6 +128,10 @@ El MVP no incluirá:
 - configuración dinámica de taxonomías;
 - detección de inconsistencias entre documentos relacionados;
 - análisis de impacto de cambios entre documentos;
+- formato DOCX;
+- OCR para PDFs escaneados;
+- procesamiento de imágenes dentro de documentos;
+- tablas complejas (multi-nivel, celdas combinadas);
 - edición colaborativa;
 - control documental empresarial;
 - gestión avanzada de permisos;

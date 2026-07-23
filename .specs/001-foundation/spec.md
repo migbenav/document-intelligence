@@ -1,7 +1,7 @@
 # Spec - Product Foundation
 
-> Version: 0.2
-> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md
+> Version: 0.3
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md, ADR-003-document-ingestion.md
 
 ---
 
@@ -37,6 +37,7 @@ No incluye:
 - Knowledge Graph completo (motor de grafos dedicado).
 - Análisis multi-documento ni relaciones entre documentos.
 - Configuración dinámica de taxonomías.
+- Formato DOCX, OCR, procesamiento de imágenes ni tablas complejas.
 - Colaboración, sincronización entre documentos ni control de versiones.
 
 ---
@@ -117,7 +118,22 @@ Para obtener respuestas basadas en el Knowledge Model generado.
 
 ## RF-01
 
-El sistema debe permitir cargar un documento.
+El sistema debe permitir cargar un documento en los siguientes formatos:
+
+- Markdown (.md)
+- Texto plano (.txt)
+- PDF (.pdf)
+
+Restricciones de ingesta:
+
+- Tamaño máximo: 1 MB (Markdown/TXT), 10 MB (PDF).
+- Encoding: UTF-8 para Markdown y texto plano; nativo para PDF.
+- Idiomas soportados: español e inglés.
+- Imágenes dentro del documento: se ignoran.
+- Tablas simples: se extraen como texto. Tablas complejas: se ignoran.
+- PDFs escaneados (imagen): no soportados.
+
+La capa de ingesta es un módulo desacoplado del motor de análisis. Transforma el documento original en una representación intermedia de texto estructurado sobre la cual opera el resto del pipeline.
 
 ---
 
@@ -190,6 +206,7 @@ El sistema mostrará el Knowledge Model y los resultados del análisis de calida
 - La arquitectura debe permitir incorporar nuevos tipos de análisis.
 - La solución debe ser modular.
 - Debe ser posible reemplazar el proveedor del LLM sin modificar el resto del sistema.
+- La capa de ingesta debe estar desacoplada del motor de análisis, permitiendo agregar nuevos formatos como adaptadores independientes.
 
 ---
 
@@ -246,8 +263,13 @@ El usuario puede visualizar los elementos del Knowledge Model y los resultados d
 Para el MVP:
 
 - Se analizará un único documento.
+- Formatos soportados: Markdown (.md), texto plano (.txt), PDF (.pdf).
+- Tamaño máximo: 1 MB (Markdown/TXT), 10 MB (PDF).
+- Encoding: UTF-8 para Markdown/TXT; nativo para PDF.
+- Idiomas: español e inglés.
 - La taxonomía de elementos es fija (no configurable por el usuario).
 - El Knowledge Model se almacena como elementos tipados con relaciones opcionales (no como Knowledge Graph completo).
+- No se soporta DOCX, OCR, procesamiento de imágenes ni tablas complejas.
 - No habrá autenticación.
 - No existirá edición colaborativa.
 - No se mantendrá historial de versiones.
