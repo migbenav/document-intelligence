@@ -1,6 +1,7 @@
 # Product Requirements Document
 
-> Version: 0.1
+> Version: 0.2
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md
 
 ---
 
@@ -8,7 +9,7 @@
 
 > Decisión documentada en: decisions/ADR-001-mvp-scope.md
 
-Construir un MVP de una plataforma de inteligencia documental que permita transformar un documento complejo en una representación de conocimiento estructurado que pueda ser analizada y consultada mediante inteligencia artificial.
+Construir un MVP de una plataforma de inteligencia documental que permita transformar un documento complejo en un Knowledge Model (modelo de conocimiento estructurado) que pueda ser analizado y consultado mediante inteligencia artificial.
 
 El MVP debe demostrar que un documento puede ser comprendido más allá de su contenido textual, identificando elementos relevantes, inconsistencias internas, información faltante y oportunidades de mejora.
 
@@ -52,13 +53,13 @@ El usuario puede proporcionar documentos para análisis.
 
 Resultado esperado:
 
-El sistema procesa el documento y genera una representación interna de su contenido.
+El sistema procesa el documento y genera un Knowledge Model: una representación interna estructurada con elementos tipados y relaciones opcionales entre ellos.
 
 ---
 
 ## C2. Comprensión documental
 
-El sistema identifica elementos relevantes del documento:
+El sistema construye un Knowledge Model identificando los siguientes elementos (taxonomía fija en el MVP):
 
 - propósito;
 - conceptos;
@@ -67,11 +68,13 @@ El sistema identifica elementos relevantes del documento:
 - procesos;
 - restricciones.
 
+Cada elemento incluye un tipo, contenido textual y referencia a su ubicación en el documento fuente. Las relaciones entre elementos se capturan de forma opcional cuando el sistema las identifica con suficiente confianza.
+
 ---
 
 ## C3. Exploración del conocimiento
 
-El usuario puede visualizar y consultar la información identificada.
+El usuario puede visualizar y consultar el Knowledge Model generado.
 
 Ejemplos:
 
@@ -79,12 +82,13 @@ Ejemplos:
 - ¿Qué reglas define?
 - ¿Quiénes participan?
 - ¿Qué conceptos son importantes?
+- ¿Qué relaciones existen entre los elementos?
 
 ---
 
 ## C4. Análisis de calidad documental
 
-El sistema evalúa la calidad del documento basándose en el conocimiento extraído:
+El sistema evalúa la calidad del documento basándose en el Knowledge Model generado:
 
 - detecta inconsistencias internas: contradicciones y ambigüedades dentro del documento;
 - identifica información faltante según la estructura esperada para el tipo de documento;
@@ -94,7 +98,7 @@ El sistema evalúa la calidad del documento basándose en el conocimiento extra�
 
 ## C5. Asistencia mediante IA
 
-El usuario puede interactuar con el conocimiento generado utilizando lenguaje natural.
+El usuario puede interactuar con el Knowledge Model utilizando lenguaje natural.
 
 ---
 
@@ -102,7 +106,9 @@ El usuario puede interactuar con el conocimiento generado utilizando lenguaje na
 
 El MVP no incluirá:
 
+- Knowledge Graph completo (motor de grafos dedicado);
 - análisis multi-documento ni relaciones entre documentos;
+- configuración dinámica de taxonomías;
 - detección de inconsistencias entre documentos relacionados;
 - análisis de impacto de cambios entre documentos;
 - edición colaborativa;
@@ -140,7 +146,7 @@ El MVP será exitoso si demuestra que:
    - procesos
    - restricciones
 
-4. El sistema genera una representación estructurada del conocimiento.
+4. El sistema genera un Knowledge Model: elementos tipados con relaciones opcionales.
 
 5. El sistema evalúa la calidad documental:
    - inconsistencias internas
@@ -161,10 +167,10 @@ El MVP será exitoso si demuestra que:
 
 - Cargar documento.
 - Analizar documento.
-- Extraer conocimiento estructurado.
+- Generar Knowledge Model (elementos tipados con relaciones opcionales).
 - Detectar inconsistencias internas.
 - Identificar información faltante según estructura esperada.
-- Sugerir mejoras basadas en el conocimiento extraído.
+- Sugerir mejoras basadas en el Knowledge Model.
 - Consultar mediante IA.
 - Mostrar resultados.
 
@@ -180,6 +186,8 @@ El MVP será exitoso si demuestra que:
 
 ## Not Now
 
+- Knowledge Graph completo (motor de grafos dedicado).
+- Configuración dinámica de taxonomías.
 - Análisis multi-documento.
 - Relaciones entre documentos.
 - Comparar documentos.

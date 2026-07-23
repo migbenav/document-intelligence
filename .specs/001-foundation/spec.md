@@ -1,7 +1,7 @@
 # Spec - Product Foundation
 
 > Version: 0.2
-> Decisión de alcance: decisions/ADR-001-mvp-scope.md
+> Decisiones aplicadas: ADR-001-mvp-scope.md, ADR-002-knowledge-model.md
 
 ---
 
