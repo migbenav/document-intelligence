@@ -1,0 +1,7 @@
+This is a simple plain text document without any headings.
+
+It contains multiple paragraphs of text that should be treated
+as a single chunk since there are no detectable heading patterns.
+
+The adapter should return this as one chunk with the structural
+context set to (document).

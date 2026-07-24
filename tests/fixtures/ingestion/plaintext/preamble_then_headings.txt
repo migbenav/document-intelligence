@@ -1,0 +1,10 @@
+This is preamble content that appears before any headings.
+It should become its own chunk with (document) context.
+
+FIRST SECTION
+
+Content of the first section after the preamble.
+
+SECOND SECTION
+
+Content of the second section.

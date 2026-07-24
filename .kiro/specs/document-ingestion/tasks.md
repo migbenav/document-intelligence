@@ -58,27 +58,27 @@ This plan implements the document ingestion feature: upload, validation, text ex
   Create `src/backend/app/db/migrations/001_create_documents.sql` with the `documents` table (document_id UUID PK, original_filename, format, size_bytes, language, upload_timestamp, warnings JSONB, status, error_message, expires_at, created_at) and `document_chunks` table (id UUID PK, document_id FK CASCADE, chunk_id, text, structural_context JSONB, order, created_at, UNIQUE on document_id+chunk_id). Include index `idx_chunks_document` on document_chunks(document_id).
   **Requirements: 3, 5**
 
-- [ ] 3. Validator module
+- [x] 3. Validator module
   Implement `src/backend/app/ingestion/validator.py` with `ValidationResult` dataclass and `Validator` class. The `validate(file_bytes, filename)` method checks: supported extension (.md, .txt, .pdf), size limits (1 MB for md/txt, 10 MB for pdf), and UTF-8 encoding for md/txt. Returns specific error codes (`unsupported_format`, `file_too_large`, `invalid_encoding`) with actionable user-facing messages. Write unit tests in `tests/unit/ingestion/test_validator.py`.
   **Requirements: 1.4, 1.5, 1.6, 1.7**
 
-- [ ] 4. Format adapter base class and Markdown adapter
+- [x] 4. Format adapter base class and Markdown adapter
   Create `src/backend/app/ingestion/adapters/base.py` with `ContentChunk` dataclass, `ExtractionResult` dataclass, and `FormatAdapter` ABC (methods: `can_handle`, `extract`). Implement `MarkdownAdapter` in `markdown_adapter.py`: splits by h1/h2 headings via regex, one chunk per section, structural_context `{"section": "## Heading"}`, preamble content gets `{"section": "(preamble)"}`, h3+ stays within parent chunk. chunk_id format: `chunk-000`. Write unit tests with fixture files in `tests/fixtures/ingestion/markdown/`.
   **Requirements: 2.1, 7**
 
-- [ ] 5. Plain text adapter
+- [x] 5. Plain text adapter
   Implement `PlainTextAdapter` in `plaintext_adapter.py`: single chunk by default, splits at ALL CAPS lines or lines followed by `===`/`---` underlines. Structural context: `{"section": "HEADING"}` or `{"section": "(document)"}`. Write unit tests with fixtures in `tests/fixtures/ingestion/plaintext/`.
   **Requirements: 2.2, 7**
 
-- [ ] 6. PDF adapter
+- [x] 6. PDF adapter
   Implement `PdfAdapter` in `pdf_adapter.py` using PyMuPDF: open with `fitz.open(stream=file_bytes, filetype="pdf")`, detect scanned PDFs (total text < 50 chars → reject with error), extract text per page with structural_context `{"page": N}` (1-indexed), split pages >4000 chars at paragraph boundaries, ignore images, extract simple tables as text, skip complex tables with warning. Implement `is_scanned_pdf()` helper. Write unit tests with fixtures in `tests/fixtures/ingestion/pdf/`.
   **Requirements: 2.3, 2.4, 2.5, 2.6, 2.7**
 
-- [ ] 7. Language detection module
+- [x] 7. Language detection module
   Implement `LanguageDetector` in `src/backend/app/ingestion/language.py` with `detect(text_sample) -> DetectedLanguage`. Sample first 1000 chars, use stopword frequency matching (English: the/is/and, Spanish: el/la/de/que) plus character patterns (ñ, ¿, ¡). Return `UNKNOWN` if confidence below threshold. No LLM or network dependency. Write unit tests in `tests/unit/ingestion/test_language.py`.
   **Requirements: 4.1, 4.2, 4.3**
 
-- [ ] 8. IR builder module
+- [x] 8. IR builder module
   Implement `IRBuilder` in `src/backend/app/ingestion/ir_builder.py` with `build(document_id, metadata, chunks) -> IntermediateRepresentation`. Validates sequential chunk ordering (0-indexed, no gaps) and unique chunk_ids — raises `ValueError` on violations. Write unit tests in `tests/unit/ingestion/test_ir_builder.py`.
   **Requirements: 3.1, 3.2, 3.3, 3.4, 3.5**
 

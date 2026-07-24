@@ -1,0 +1,11 @@
+Introduction
+============
+
+This is the introduction with an equals underline heading.
+It contains some explanatory text.
+
+Implementation Details
+---------------------
+
+Here are the implementation details using a dash underline.
+The adapter should detect both styles.

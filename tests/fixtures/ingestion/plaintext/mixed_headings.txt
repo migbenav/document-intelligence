@@ -1,0 +1,15 @@
+Overview
+========
+
+This document uses mixed heading styles to test detection.
+
+REQUIREMENTS
+
+The requirements section uses ALL CAPS heading style.
+It should be detected as a heading.
+
+Design Notes
+------------
+
+This section uses dash underline style.
+Both styles should work together correctly.
