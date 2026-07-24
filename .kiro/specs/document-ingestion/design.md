@@ -334,7 +334,15 @@ The 4000-character limit per chunk is informed by downstream LLM context window 
 
 ### Session Expiration and Cleanup
 
-Documents are assigned an `expires_at` timestamp at upload time. The default session duration is **24 hours** from upload. A Supabase scheduled function (or a cron-triggered API call) deletes expired rows and their associated storage files.
+Documents are assigned an `expires_at` timestamp at upload time, calculated as `upload_timestamp + configured retention duration`. The retention duration is a configurable value (e.g., environment variable or application config) that can be adjusted without code changes.
+
+The cleanup mechanism:
+
+1. A Supabase scheduled function (or a cron-triggered API call) periodically queries for rows where `expires_at < now()`.
+2. Expired rows are deleted from `documents` (cascading to `document_chunks`).
+3. Associated files in Supabase Storage are removed.
+
+The architecture is independent of the chosen duration — any value from minutes to days works without structural changes. As a suggested default for initial deployment, 24 hours provides a reasonable balance between usability and data minimization, but this is a deployment configuration choice, not an architectural constraint.
 
 The Knowledge Model (produced by downstream features) persists independently and is not affected by document expiration.
 
@@ -397,10 +405,6 @@ Error messages from the API are user-facing and actionable (Req 6, AC4). The fro
 ---
 
 ## Design Decisions Pending Clarification
-
-### Session Duration
-
-The 24-hour session expiry is a pragmatic default. If the product requires longer persistence (e.g., users returning the next day), this can be extended. The design supports any duration via the `expires_at` field.
 
 ### Upload Progress for Synchronous Processing
 
