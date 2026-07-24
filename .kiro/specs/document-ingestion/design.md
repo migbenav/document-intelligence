@@ -90,6 +90,157 @@ Adding a future format (e.g., DOCX) requires only implementing a new `FormatAdap
 
 ---
 
+## Components and Interfaces
+
+### Component Overview
+
+| Component | Responsibility | Exposes | Consumes |
+|-----------|---------------|---------|----------|
+| `api/v1/documents.py` | HTTP layer — receives uploads, returns responses | REST endpoints | `IngestionService` |
+| `IngestionService` | Orchestrates the full pipeline (validate → extract → detect language → build IR → persist) | `ingest(file_bytes, filename, content_type) → DocumentStatus` | `Validator`, `FormatAdapter`, `LanguageDetector`, `IRBuilder`, `StorageService` |
+| `Validator` | Enforces pre-processing constraints | `validate(file_bytes, filename) → ValidationResult` | — |
+| `FormatAdapter` (ABC) | Extracts text from a specific format | `extract(file_bytes, filename) → ExtractionResult` | Format-specific libraries |
+| `MarkdownAdapter` | Markdown extraction | Implements `FormatAdapter` | — |
+| `PlainTextAdapter` | Plain text extraction | Implements `FormatAdapter` | — |
+| `PdfAdapter` | PDF extraction | Implements `FormatAdapter` | PyMuPDF |
+| `LanguageDetector` | Classifies document language | `detect(text_sample) → DetectedLanguage` | — |
+| `IRBuilder` | Assembles final IR from parts | `build(doc_id, metadata, chunks) → IntermediateRepresentation` | — |
+| `StorageService` | Persists original file and IR to Supabase | `store_original(doc_id, file_bytes, filename)`, `persist_ir(ir)`, `delete_expired()` | supabase-py |
+
+### Key Interfaces
+
+```python
+# --- Validation ---
+@dataclass
+class ValidationResult:
+    valid: bool
+    error_code: str | None = None   # e.g., "unsupported_format", "file_too_large"
+    error_message: str | None = None
+    detected_format: DocumentFormat | None = None
+
+class Validator:
+    def validate(self, file_bytes: bytes, filename: str) -> ValidationResult: ...
+
+# --- Extraction (adapter contract, defined in Architecture section) ---
+class FormatAdapter(ABC):
+    def can_handle(self, filename: str, content_type: str | None) -> bool: ...
+    def extract(self, file_bytes: bytes, filename: str) -> ExtractionResult: ...
+
+# --- Language Detection ---
+class LanguageDetector:
+    def detect(self, text_sample: str) -> DetectedLanguage: ...
+
+# --- IR Assembly ---
+class IRBuilder:
+    def build(
+        self,
+        document_id: str,
+        metadata: DocumentMetadata,
+        chunks: list[ContentChunkModel],
+    ) -> IntermediateRepresentation: ...
+
+# --- Storage ---
+class StorageService:
+    async def store_original(self, document_id: str, file_bytes: bytes, filename: str) -> None: ...
+    async def persist_ir(self, ir: IntermediateRepresentation) -> None: ...
+    async def delete_expired(self) -> int: ...  # returns count of deleted documents
+    async def get_ir(self, document_id: str) -> IntermediateRepresentation | None: ...
+    async def get_status(self, document_id: str) -> DocumentStatus | None: ...
+
+# --- Orchestrator ---
+@dataclass
+class DocumentStatus:
+    document_id: str
+    status: str  # "processing" | "ready" | "failed"
+    filename: str
+    format: str
+    language: str | None = None
+    chunk_count: int | None = None
+    warnings: list[str] = field(default_factory=list)
+    error_message: str | None = None
+
+class IngestionService:
+    async def ingest(self, file_bytes: bytes, filename: str, content_type: str | None) -> DocumentStatus: ...
+```
+
+### Interaction Flow
+
+```
+documents.py (API)
+      │
+      ▼
+IngestionService.ingest()
+      │
+      ├── Validator.validate()          → fail? return 400
+      │
+      ├── StorageService.store_original()
+      │
+      ├── adapter = select_adapter(format)
+      │   └── adapter.extract()         → fail? mark failed, return 422
+      │
+      ├── LanguageDetector.detect()
+      │
+      ├── IRBuilder.build()
+      │
+      └── StorageService.persist_ir()   → update status = ready
+```
+
+---
+
+## Correctness Properties
+
+These invariants must hold for the ingestion layer to be considered correct:
+
+### Property 1: Format Fidelity
+
+The intermediate representation contains all extractable text from the original document. No text content is silently dropped — any skipped content (complex tables, images) is recorded in the `warnings` array.
+
+**Validates: Requirements 2.4, 2.5, 2.6**
+
+### Property 2: Structural Preservation
+
+Chunk ordering in the IR matches the reading order of the original document. `chunk.order` values are strictly sequential (0, 1, 2, ...) with no gaps.
+
+**Validates: Requirements 3.3**
+
+### Property 3: Chunk Completeness
+
+The concatenation of all `chunk.text` values (in order) equals the full extracted text of the document. No text exists between chunks that is not captured.
+
+**Validates: Requirements 2.1, 2.2, 2.3, 3.3**
+
+### Property 4: Metadata Accuracy
+
+`size_bytes` equals the actual byte length of the uploaded file. `format` matches the actual file content (not just the extension). `language` reflects the dominant language of the extracted text.
+
+**Validates: Requirements 1.1, 1.2, 1.3, 3.2, 4.1, 4.2**
+
+### Property 5: Isolation Guarantee
+
+The `IntermediateRepresentation` output is identical in structure regardless of source format. No field is conditionally present based on format — only the values within `structural_context` differ.
+
+**Validates: Requirements 7.3, 7.4**
+
+### Property 6: Idempotent Validation
+
+Uploading the same file twice produces two independent documents with different `document_id` values but structurally equivalent IR content.
+
+**Validates: Requirements 1.1, 1.2, 1.3**
+
+### Property 7: Cleanup Completeness
+
+When `delete_expired()` runs, all associated data is removed — the `documents` row, all `document_chunks` rows (via CASCADE), and the original file in storage. No orphaned data remains.
+
+**Validates: Requirements 5.2**
+
+### Property 8: Privacy Boundary
+
+At no point does the ingestion layer attach, store, or forward user identity, account information, or usage history alongside document data.
+
+**Validates: Requirements 5.4**
+
+---
+
 ## Data Models
 
 ### Intermediate Representation (IR)
@@ -401,6 +552,71 @@ The frontend interacts with the ingestion layer through three API calls:
 3. **Retrieve IR** — `GET /api/v1/documents/{document_id}/ir` when ready. The frontend does not use the IR directly; it passes the document_id to the analysis feature.
 
 Error messages from the API are user-facing and actionable (Req 6, AC4). The frontend displays them directly without transformation.
+
+---
+
+## Error Handling
+
+Errors are categorized by origin and handled at the appropriate layer:
+
+| Error Type | Origin | Response | User Message |
+|-----------|--------|----------|--------------|
+| Unsupported format | Validation | 400 | Lists supported formats |
+| File too large | Validation | 400 | States limit for the detected format |
+| Invalid encoding | Validation | 400 | Specifies UTF-8 requirement |
+| Scanned PDF | Extraction (pre-check) | 400 | Explains OCR is not supported |
+| Corrupted/unreadable PDF | Extraction | 422 | Suggests re-exporting the PDF |
+| Extraction partial failure | Extraction | Success with warnings | Warnings array in IR metadata |
+| Database write failure | Storage | 500 | Generic "processing failed, try again" |
+| Storage upload failure | Storage | 500 | Generic "processing failed, try again" |
+
+Design principles:
+- Validation errors (4xx) are returned immediately before any processing begins.
+- Extraction errors that affect the entire document result in `status: failed` with a descriptive `error_message`.
+- Partial extraction issues (e.g., a single complex table skipped) are non-blocking — they produce warnings in the IR metadata rather than failures.
+- Internal errors (5xx) never expose stack traces or implementation details to the client.
+
+---
+
+## Security Considerations
+
+Aligned with ADR-005 (Privacy and External Processing):
+
+- **No user metadata attached:** The ingestion layer stores only document content and structural metadata. No user identity, account info, or usage history is persisted alongside the document.
+- **Input sanitization:** File names are sanitized before storage to prevent path traversal. File content is treated as untrusted input — adapters handle malformed content gracefully without crashing.
+- **Size limits enforced server-side:** Client-reported sizes are not trusted; the server validates actual byte count after receiving the full upload.
+- **Temporary retention:** The original file is deleted after session expiry. Only the derived IR persists during the session.
+- **No execution of embedded content:** PDF JavaScript, macros, or active content are ignored by PyMuPDF's text extraction — they are never executed.
+
+---
+
+## Testing Strategy
+
+| Layer | Scope | Approach |
+|-------|-------|----------|
+| Adapters | Each adapter in isolation | Unit tests with fixture files (small .md, .txt, .pdf samples) covering normal cases, edge cases (empty files, huge headings, complex tables), and error cases (corrupted PDFs, scanned PDFs) |
+| Validator | Validation rules | Unit tests for each constraint (format, size, encoding) with both passing and failing inputs |
+| Language detection | Classification accuracy | Unit tests with known Spanish and English text samples, mixed-language edge cases, and very short texts |
+| IR Builder | Assembly logic | Unit tests verifying correct chunk ordering, metadata population, and structural context assignment |
+| Service (pipeline) | End-to-end ingestion flow | Integration tests that upload a file via the API and verify the resulting IR in the database |
+| API endpoints | HTTP contract | Integration tests verifying status codes, response shapes, and error formats using httpx + pytest |
+
+Fixture files live in `tests/fixtures/ingestion/` organized by format and test scenario.
+
+---
+
+## Dependencies
+
+| Package | Purpose | Justification |
+|---------|---------|---------------|
+| FastAPI | HTTP framework | Project standard (tech.md) |
+| Pydantic v2 | Data validation and IR models | Project standard (tech.md) |
+| PyMuPDF (fitz) | PDF text extraction | Project standard (tech.md); handles text extraction, page structure, and scanned PDF detection without OCR dependency |
+| supabase-py | Database and storage client | Project standard (tech.md) |
+| python-multipart | Multipart upload parsing | Required by FastAPI for file uploads |
+| pytest + httpx | Testing | Project standard (tech.md) |
+
+No additional dependencies beyond the project's established stack are introduced.
 
 ---
 
