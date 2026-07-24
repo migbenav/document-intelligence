@@ -50,11 +50,11 @@ This plan implements the document ingestion feature: upload, validation, text ex
 
 ## Tasks
 
-- [ ] 1. Project scaffolding and Pydantic models
+- [x] 1. Project scaffolding and Pydantic models
   Create the backend directory structure under `src/backend/app/` and implement core Pydantic v2 models in `models/document.py`: `DocumentFormat` enum, `DetectedLanguage` enum, `ContentChunkModel`, `DocumentMetadata`, `IntermediateRepresentation`, `DocumentStatus`, and `ValidationErrorResponse`. All models must use `Field` descriptors and serialize to JSON matching the API response format defined in design.md.
   **Requirements: 3, 7**
 
-- [ ] 2. Database migration
+- [x] 2. Database migration
   Create `src/backend/app/db/migrations/001_create_documents.sql` with the `documents` table (document_id UUID PK, original_filename, format, size_bytes, language, upload_timestamp, warnings JSONB, status, error_message, expires_at, created_at) and `document_chunks` table (id UUID PK, document_id FK CASCADE, chunk_id, text, structural_context JSONB, order, created_at, UNIQUE on document_id+chunk_id). Include index `idx_chunks_document` on document_chunks(document_id).
   **Requirements: 3, 5**
 

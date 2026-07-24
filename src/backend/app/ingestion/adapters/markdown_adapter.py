@@ -1,0 +1,1 @@
+"""Markdown format extraction adapter."""
