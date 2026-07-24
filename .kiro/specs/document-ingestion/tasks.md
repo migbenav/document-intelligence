@@ -82,19 +82,19 @@ This plan implements the document ingestion feature: upload, validation, text ex
   Implement `IRBuilder` in `src/backend/app/ingestion/ir_builder.py` with `build(document_id, metadata, chunks) -> IntermediateRepresentation`. Validates sequential chunk ordering (0-indexed, no gaps) and unique chunk_ids — raises `ValueError` on violations. Write unit tests in `tests/unit/ingestion/test_ir_builder.py`.
   **Requirements: 3.1, 3.2, 3.3, 3.4, 3.5**
 
-- [ ] 9. Storage service
+- [x] 9. Storage service
   Implement `StorageService` in `src/backend/app/ingestion/storage.py` with async methods: `store_original` (Supabase Storage at `documents/{id}/original/{filename}`), `persist_ir` (insert into documents + document_chunks, set status=ready), `create_document_record` (status=processing), `mark_failed`, `get_status`, `get_ir`, `delete_expired` (query expires_at < now, cascade delete + remove storage files). Sanitize filenames. Read retention duration from `DOCUMENT_RETENTION_SECONDS` env var. No user metadata stored.
   **Requirements: 5.1, 5.2, 5.3, 5.4, 3.6**
 
-- [ ] 10. Ingestion service (pipeline orchestrator)
+- [x] 10. Ingestion service (pipeline orchestrator)
   Implement `IngestionService` in `src/backend/app/ingestion/service.py`. Constructor receives Validator, list of FormatAdapters, LanguageDetector, IRBuilder, StorageService. Method `async ingest(file_bytes, filename, content_type) -> DocumentStatus` orchestrates: generate UUID → validate → create record → store original → select adapter → extract → detect language (first 1000 chars) → build IR → persist IR. Validation failures short-circuit. Extraction failures mark as failed.
   **Requirements: 1, 6, 7**
 
-- [ ] 11. API endpoints
+- [x] 11. API endpoints
   Implement FastAPI router in `src/backend/app/api/v1/documents.py`: `POST /upload` (multipart, returns 202/400/422), `GET /{document_id}/status` (returns 200/404), `GET /{document_id}/ir` (returns 200/404/409). Create `src/backend/app/main.py` with app factory, CORS config, and dependency injection. Error responses use format: `{"error": "code", "message": "..."}`.
   **Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 6.3, 6.4**
 
-- [ ] 12. Integration tests
+- [x] 12. Integration tests
   Write end-to-end tests in `tests/integration/ingestion/test_upload_flow.py` using httpx AsyncClient: upload each format → poll status → retrieve IR → verify structure. Test error scenarios (unsupported format, oversized, non-UTF-8, scanned PDF, non-existent document). Verify format-independent output (same content in .md and .txt → equivalent IR). Create fixture files in `tests/fixtures/ingestion/`.
   **Requirements: 1, 6, 7**
 

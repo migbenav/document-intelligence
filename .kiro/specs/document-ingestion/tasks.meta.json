@@ -96,6 +96,54 @@
         "chatSessionId": "sess_92391569-33d7-4021-95d0-975e3ace6f36",
         "timestamp": 1784924906776
       }
+    ],
+    "9. Storage service": [
+      {
+        "executionId": "7434ffa1-1ca6-4bdc-9a55-5ef9861933cb",
+        "chatSessionId": "sess_39462e33-db58-4c96-8422-ebcc928cc3e5",
+        "timestamp": 1784933037063
+      },
+      {
+        "executionId": "7434ffa1-1ca6-4bdc-9a55-5ef9861933cb",
+        "chatSessionId": "sess_39462e33-db58-4c96-8422-ebcc928cc3e5",
+        "timestamp": 1784933527904
+      }
+    ],
+    "10. Ingestion service (pipeline orchestrator)": [
+      {
+        "executionId": "32d8f46d-0053-4dba-9870-5985d00d131d",
+        "chatSessionId": "sess_0c36c72a-919a-4727-9865-c8d1bdc26a92",
+        "timestamp": 1784933580473
+      },
+      {
+        "executionId": "32d8f46d-0053-4dba-9870-5985d00d131d",
+        "chatSessionId": "sess_0c36c72a-919a-4727-9865-c8d1bdc26a92",
+        "timestamp": 1784933913787
+      }
+    ],
+    "11. API endpoints": [
+      {
+        "executionId": "870f4139-4a46-4e19-af5c-e9dc6c234625",
+        "chatSessionId": "sess_d9b8b598-0ba1-4b4f-9178-ce5cbe737e09",
+        "timestamp": 1784934331536
+      },
+      {
+        "executionId": "870f4139-4a46-4e19-af5c-e9dc6c234625",
+        "chatSessionId": "sess_d9b8b598-0ba1-4b4f-9178-ce5cbe737e09",
+        "timestamp": 1784935075233
+      }
+    ],
+    "12. Integration tests": [
+      {
+        "executionId": "2101eda5-0dc8-46bc-b0a3-6a1e7162c917",
+        "chatSessionId": "sess_5b6827ba-9241-42ef-a0a1-d5b6929b01f6",
+        "timestamp": 1784935172455
+      },
+      {
+        "executionId": "2101eda5-0dc8-46bc-b0a3-6a1e7162c917",
+        "chatSessionId": "sess_5b6827ba-9241-42ef-a0a1-d5b6929b01f6",
+        "timestamp": 1784935937859
+      }
     ]
   }
 }
