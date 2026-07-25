@@ -12,8 +12,19 @@ from app.api.v1.documents import (
     _get_storage_service,
     router as documents_router,
 )
+from app.api.v1.quality import (
+    _get_analysis_storage_service,
+    _get_quality_analysis_service,
+    router as quality_router,
+)
 from app.analysis.extraction import ExtractionService
 from app.analysis.llm_client import LLMClient
+from app.analysis.quality.ambiguity_detector import AmbiguityDetector
+from app.analysis.quality.completeness_evaluator import CompletenessEvaluator
+from app.analysis.quality.contradiction_detector import ContradictionDetector
+from app.analysis.quality.finding_verifier import FindingVerifier
+from app.analysis.quality.service import QualityAnalysisService
+from app.analysis.quality.suggestion_generator import SuggestionGenerator
 from app.analysis.service import AnalysisService, AnalysisStorageService
 from app.analysis.type_inference import TypeInferenceService
 from app.analysis.verification import VerificationService
@@ -89,8 +100,32 @@ def create_app(
 
         app.dependency_overrides[_get_analysis_service] = lambda: analysis_service
 
+        # Quality analysis service dependencies
+        contradiction_detector = ContradictionDetector(llm_client=llm_client)
+        ambiguity_detector = AmbiguityDetector(llm_client=llm_client)
+        completeness_evaluator = CompletenessEvaluator(llm_client=llm_client)
+        suggestion_generator = SuggestionGenerator(llm_client=llm_client)
+        finding_verifier = FindingVerifier()
+
+        quality_analysis_service = QualityAnalysisService(
+            contradiction_detector=contradiction_detector,
+            ambiguity_detector=ambiguity_detector,
+            completeness_evaluator=completeness_evaluator,
+            suggestion_generator=suggestion_generator,
+            finding_verifier=finding_verifier,
+            storage=analysis_storage_service,
+        )
+
+        app.dependency_overrides[_get_quality_analysis_service] = (
+            lambda: quality_analysis_service
+        )
+        app.dependency_overrides[_get_analysis_storage_service] = (
+            lambda: analysis_storage_service
+        )
+
     # --- Router registration ---
     app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
     app.include_router(analysis_router, prefix="/api/v1/documents", tags=["analysis"])
+    app.include_router(quality_router, prefix="/api/v1/documents", tags=["quality"])
 
     return app
