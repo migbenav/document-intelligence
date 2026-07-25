@@ -8,14 +8,14 @@ Guía completa para configurar el entorno de desarrollo local del proyecto Docum
 
 Antes de empezar, verifica que tienes instalado:
 
-| Herramienta | Versión mínima | Verificación |
-|---|---|---|
-| Python | 3.12+ | `python --version` |
-| pip | 23+ | `pip --version` |
-| Git | 2.30+ | `git --version` |
-| Node.js | 18+ | `node --version` |
+| Herramienta | Versión | Verificación | Notas |
+|---|---|---|---|
+| Python | 3.12–3.14 | `python --version` | Verificado con 3.14.2. Ver restricción de litellm abajo. |
+| pip | 23+ | `pip --version` | — |
+| Git | 2.30+ | `git --version` | — |
+| Node.js | 18+ | `node --version` | Verificado con 24.13.0 |
 
-**Por qué Python 3.12+:** El proyecto usa sintaxis moderna (`type` statements, mejorado `match`, performance improvements) y el `pyproject.toml` lo declara como requisito.
+**Por qué Python 3.12–3.14:** El proyecto usa sintaxis moderna y el `pyproject.toml` declara `>=3.12`. Funciona con 3.14, pero `litellm` debe fijarse a `==1.83.7` (ver sección de problemas conocidos al final).
 
 **Por qué Node.js 18+:** El frontend usa Vite, React 18 y las últimas APIs de Node.js.
 
@@ -83,10 +83,19 @@ pip install -e ".[dev]"
 
 **Qué instala:**
 
-| Grupo | Paquetes | Propósito |
-|---|---|---|
-| Core | fastapi, pydantic, pymupdf, supabase, python-multipart, uvicorn, litellm | Runtime del backend |
-| Dev | pytest, pytest-asyncio, httpx | Testing |
+| Grupo | Paquetes | Versión usada | Propósito |
+|---|---|---|---|
+| Core | fastapi | 0.140.0 | Framework web async |
+| Core | pydantic | 2.12.5 | Validación y schemas |
+| Core | pymupdf | 1.28.0 | Parsing de PDFs |
+| Core | supabase | 2.31.0 | Cliente de Supabase |
+| Core | python-multipart | — | Upload de archivos |
+| Core | python-dotenv | 1.0.1 | Carga de .env |
+| Core | uvicorn | 0.51.0 | Servidor ASGI |
+| Core | litellm | **1.83.7** | Abstracción LLM (⚠️ versión fija) |
+| Dev | pytest, pytest-asyncio, httpx, hypothesis | — | Testing |
+
+**⚠️ Restricción de litellm:** Si usas Python 3.14, debes instalar `litellm==1.83.7` explícitamente antes de `pip install -e ".[dev]"`. Las versiones 1.84–1.92 declaran `Requires-Python: <3.14`, y la 1.93+ intenta compilar extensiones Rust que fallan en Windows sin toolchain. Ver sección de Troubleshooting.
 
 **Por qué `-e` (editable):** Instala el paquete en modo editable — los cambios en el código se reflejan inmediatamente sin reinstalar. Ideal para desarrollo.
 
@@ -99,22 +108,33 @@ pip install -e ".[dev]"
 Crea el archivo en la **raíz del proyecto** (`document-intelligence/.env`):
 
 ```env
+# Supabase (obligatorias para persistencia)
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 DOCUMENT_RETENTION_SECONDS=86400
+
+# LLM API Keys (obligatorias para el motor de análisis)
+GEMINI_API_KEY=tu-api-key-de-google-ai-studio
+GROQ_API_KEY=tu-api-key-de-groq
+
+# Opcional
+CORS_ORIGINS=http://localhost:5173
 ```
 
 **Por qué:**
 - El backend necesita credenciales para conectarse a Supabase (DB + Storage).
+- Las API keys de Gemini y Groq son obligatorias — sin ellas el backend no arranca (lanza `ConfigurationError` al iniciar).
 - La retención de documentos es configurable sin tocar código.
 - Las credenciales no se commitean (`.gitignore` incluye `.env`).
 
 **Dónde obtener los valores:**
 - `SUPABASE_URL` → Dashboard → Settings → API → Project URL
 - `SUPABASE_SERVICE_ROLE_KEY` → Dashboard → Settings → API → service_role key (secret, formato JWT)
+- `GEMINI_API_KEY` → [Google AI Studio](https://aistudio.google.com/apikey)
+- `GROQ_API_KEY` → [Groq Console](https://console.groq.com/keys)
 - `DOCUMENT_RETENTION_SECONDS` → Default sugerido: `86400` (24 horas)
 
-**Cuándo:** Antes de ejecutar el Task 9 (Storage Service). Los tasks 1-8 no requieren conexión a Supabase.
+**Cuándo:** Antes de ejecutar el backend. Sin las variables de Supabase los servicios de persistencia no se activan. Sin las keys de LLM el backend falla al intentar crear el `LLMClient`.
 
 ---
 
@@ -122,11 +142,14 @@ DOCUMENT_RETENTION_SECONDS=86400
 
 Este paso se documenta en detalle en [supabase-setup.md](./supabase-setup.md). Resumen:
 
-1. Ejecutar la migración SQL para crear tablas (`documents`, `document_chunks`).
+1. Ejecutar las **3 migraciones SQL** en orden en el SQL Editor de Supabase:
+   - `001_create_documents.sql` — tablas `documents` y `document_chunks`
+   - `002_create_analysis_sessions.sql` — tabla `analysis_sessions`
+   - `003_add_quality_analysis.sql` — columnas de quality analysis
 2. Crear el bucket `documents` en Storage (privado, 10 MB límite).
 3. Verificar que RLS está habilitado sin políticas restrictivas.
 
-**Cuándo:** Antes del Task 9. Los tasks 1-8 son puramente lógica local sin dependencia de Supabase.
+**Cuándo:** Antes de usar la aplicación. Sin las tablas, cualquier operación de persistencia falla.
 
 ---
 
@@ -195,21 +218,29 @@ python -m pytest tests/unit -v
 
 ## 11. Ejecutar el backend (desarrollo)
 
-Desde `src/backend/` con el venv activado:
+Desde `src/backend/`:
 
 ```bash
-uvicorn app.main:create_app --factory --reload --port 8000
+python -m uvicorn app.run:app --reload --port 8000
 ```
 
-O con FastAPI CLI:
-
-```bash
-fastapi dev app/main.py --port 8000
-```
+**Nota:** Se usa `app.run:app` (no `app.main:create_app --factory`). El módulo `run.py` carga el `.env`, inicializa el cliente Supabase y pasa las dependencias al factory.
 
 **Por qué `--reload`:** Recarga automáticamente al detectar cambios en el código. Solo para desarrollo.
 
-**Cuándo:** A partir del Task 11 (API endpoints). Antes de eso, la funcionalidad se verifica con tests.
+---
+
+## 12. Ejecutar ambos servicios juntos
+
+Desde la raíz del proyecto:
+
+```powershell
+.\dev.ps1
+```
+
+Este script PowerShell levanta backend (puerto 8000) y frontend (puerto 5173) simultáneamente. `Ctrl+C` cierra ambos procesos.
+
+**Cuándo:** Para desarrollo y pruebas del flujo end-to-end.
 
 ---
 
@@ -218,11 +249,14 @@ fastapi dev app/main.py --port 8000
 ```
 document-intelligence/
 ├── .env                          ← Credenciales (no se commitea)
+├── dev.ps1                       ← Script para levantar ambos servicios
 ├── src/
 │   └── backend/
 │       ├── .venv/                ← Entorno virtual (no se commitea)
 │       ├── pyproject.toml        ← Dependencias y config del proyecto
 │       └── app/                  ← Código fuente del backend
+│           ├── run.py            ← Entry point (carga .env, inicia Supabase)
+│           └── main.py           ← App factory (dependency injection)
 └── tests/
     ├── conftest.py               ← Configura sys.path para imports
     ├── unit/                     ← Tests unitarios
@@ -232,17 +266,19 @@ document-intelligence/
 
 ---
 
-## Orden de necesidad por task
+## Orden de necesidad por paso
 
-| Paso | Requerido a partir de |
+| Paso | Requerido para |
 |---|---|
-| Python venv + dependencias | Backend (cualquier desarrollo) |
-| Node.js + npm install | Frontend (cualquier desarrollo) |
-| Archivo `.env` | Backend Task 9 (Storage Service) |
-| Tablas en Supabase | Backend Task 9 (Storage Service) |
-| Bucket en Supabase Storage | Backend Task 9 (Storage Service) |
-| Ejecutar el backend (`uvicorn`) | Test manual end-to-end |
-| Ejecutar el frontend (`npm run dev`) | Test manual end-to-end |
+| Python venv + dependencias | Cualquier desarrollo backend |
+| Node.js + npm install | Cualquier desarrollo frontend |
+| Archivo `.env` (Supabase) | Backend: persistencia de documentos |
+| Archivo `.env` (LLM keys) | Backend: motor de análisis (Feature 3+) |
+| Tablas en Supabase (3 migraciones) | Backend: operaciones de persistencia |
+| Bucket en Supabase Storage | Backend: almacenamiento de archivos originales |
+| Ejecutar el backend (`uvicorn`) | Pruebas end-to-end, uso real del frontend |
+| Ejecutar el frontend (`npm run dev`) | Pruebas end-to-end, uso real |
+| `.\dev.ps1` | Alternativa para levantar ambos juntos |
 
 ---
 
@@ -258,6 +294,34 @@ cd src/backend
 .venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 ```
+
+### `litellm` no se instala (error de Rust/compilación)
+
+**Causa:** Estás usando Python 3.14 y pip resuelve litellm >= 1.93.0, que intenta compilar extensiones Rust.
+
+**Solución:** Instalar la versión pinneada primero:
+```bash
+pip install "litellm==1.83.7"
+pip install -e ".[dev]"
+```
+
+### `ConfigurationError: Missing required LLM API keys`
+
+**Causa:** Faltan `GEMINI_API_KEY` y/o `GROQ_API_KEY` en el archivo `.env`.
+
+**Solución:** Agregar ambas keys al `.env` en la raíz del proyecto. El backend las valida al arrancar.
+
+### `RuntimeError: Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY`
+
+**Causa:** El archivo `.env` no tiene las credenciales de Supabase o no se está cargando correctamente.
+
+**Solución:** Verificar que `.env` existe en la raíz del proyecto con `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY` definidos.
+
+### "Network error during upload" en el frontend
+
+**Causa:** El backend no está corriendo, o no tiene el cliente Supabase inicializado.
+
+**Solución:** Verificar que el backend está corriendo en puerto 8000 con `python -m uvicorn app.run:app --reload --port 8000` (no con `app.main:create_app --factory`).
 
 ### Tests no encuentran los módulos
 

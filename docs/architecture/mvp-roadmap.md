@@ -126,7 +126,7 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 | Aspecto | Detalle |
 |---------|---------|
 | **Objetivo** | Evaluar la calidad del documento basándose en el Knowledge Model: detectar inconsistencias internas (contradicciones, ambigüedades), identificar información faltante según el esquema del tipo de documento, y generar sugerencias de mejora. |
-| **Estado** | 🔲 Pendiente |
+| **Estado** | ✅ Completada |
 | **Capacidades PRD** | C4 (Análisis de calidad documental) |
 | **ADRs relacionados** | ADR-001 (inconsistencias internas como diferenciador del MVP), ADR-002 (relaciones tipo contradicts para detección), ADR-004 (source_ref en hallazgos), ADR-006 (esquemas por tipo para evaluar completitud, Generic sin evaluación de completitud) |
 | **Dependencias** | Feature 3 (Knowledge Model + tipo de documento confirmado) |
@@ -134,9 +134,17 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 
 **Alcance técnico:**
 - Backend: quality analysis service, prompts específicos para cada tipo de análisis, modelos Pydantic (Inconsistency, MissingElement, Suggestion)
-- API: GET /{id}/quality-analysis
-- Persistencia: resultados almacenados en analysis_sessions o tabla dedicada
-- Frontend: panel/sección de calidad con tres categorías (inconsistencias, faltantes, sugerencias), evidencia vinculada al documento original
+- API: POST /{id}/quality-analysis, GET /{id}/quality-analysis
+- Persistencia: resultados almacenados en columnas JSONB de analysis_sessions (migración 003)
+- Detectors: ContradictionDetector, AmbiguityDetector, CompletenessEvaluator, SuggestionGenerator, FindingVerifier
+
+**Componentes implementados:**
+- Backend: QualityAnalysisService (orquestador), 4 detectores/evaluadores, finding verifier, prompt templates versionados
+- Modelos: QualityAnalysisResult, Inconsistency, MissingElement, Suggestion, FindingSourceRef, QualityAnalysisMetadata
+- Document type schemas: PRD, technical_spec, policy_process (con elementos esperados por tipo)
+- API: POST/GET /{id}/quality-analysis con estados (analyzing, completed, failed)
+- Persistencia: Migración 003 (columnas quality_* en analysis_sessions)
+- Tests: Unitarios para cada detector, modelos, schemas, prompts e integración del flujo completo
 
 ---
 
@@ -190,7 +198,7 @@ Feature 3: Analysis Engine (Knowledge Model Extraction) ✅
     ├─────────────────────┬──────────────────────┐
     ▼                     ▼                      ▼
 Feature 4:          Feature 5:             Feature 6:
-Visualization ✅    Quality Analysis       NL Queries
+Visualization ✅    Quality Analysis ✅    NL Queries
     │
     ▼
 Feature 7: User Feedback (Should Have)
@@ -206,7 +214,7 @@ Feature 7: User Feedback (Should Have)
 | 2 | Application Shell & Upload UI | ✅ Completada | Must Have | — |
 | 3 | Analysis Engine (KM Extraction) | ✅ Completada | Must Have | — |
 | 4 | KM Visualization & Exploration | ✅ Completada | Must Have | — |
-| 5 | Document Quality Analysis | 🔲 Pendiente | Must Have | Alto |
+| 5 | Document Quality Analysis | ✅ Completada | Must Have | — |
 | 6 | Natural Language Queries | 🔲 Pendiente | Must Have | Medio |
 | 7 | User Feedback | 🔲 Pendiente | Should Have | Bajo |
 

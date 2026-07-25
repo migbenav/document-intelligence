@@ -1,30 +1,27 @@
-# Supabase Setup — Prerequisitos para el Storage Service
+# Supabase Setup — Prerequisitos para el Backend
 
-Este documento describe los pasos de configuración que deben completarse en Supabase y en el entorno local **antes** de ejecutar el Task 9 (Storage Service) del spec de Document Ingestion.
-
-Sin estos pasos, el `StorageService` no podrá conectarse a la base de datos, subir archivos ni gestionar la retención temporal de documentos.
+Este documento describe los pasos de configuración que deben completarse en Supabase y en el entorno local **antes** de ejecutar el backend. Sin estos pasos, la aplicación no podrá conectarse a la base de datos, subir archivos ni gestionar la retención temporal de documentos.
 
 ---
 
 ## 1. Crear las tablas en la base de datos
 
-**Por qué:** El `StorageService` escribe y lee de las tablas `documents` y `document_chunks`. Sin ellas, cualquier operación de persistencia fallará.
+**Por qué:** El backend escribe y lee de las tablas `documents`, `document_chunks` y `analysis_sessions`. Sin ellas, cualquier operación de persistencia fallará.
 
 **Cómo:**
 
 1. Abre el **SQL Editor** en Supabase Dashboard.
-2. Copia y ejecuta el contenido de `src/backend/app/db/migrations/001_create_documents.sql`.
+2. Ejecuta las migraciones **en orden**:
 
-Este script crea:
+| # | Archivo | Qué crea |
+|---|---------|----------|
+| 1 | `src/backend/app/db/migrations/001_create_documents.sql` | Tablas `documents` y `document_chunks`, índice `idx_chunks_document` |
+| 2 | `src/backend/app/db/migrations/002_create_analysis_sessions.sql` | Tabla `analysis_sessions` (Knowledge Model, estado del análisis) |
+| 3 | `src/backend/app/db/migrations/003_add_quality_analysis.sql` | Columnas de quality analysis en `analysis_sessions` |
 
-| Tabla | Propósito |
-|---|---|
-| `documents` | Metadata del documento, estado del pipeline, timestamp de expiración |
-| `document_chunks` | Chunks de texto extraídos con contexto estructural, vinculados al documento por FK con CASCADE |
+Copia el contenido de cada archivo SQL y ejecútalo en el SQL Editor.
 
-También crea el índice `idx_chunks_document` para consultas por `document_id`.
-
-**Verificación:** En Table Editor confirma que ambas tablas existen y que `document_chunks.document_id` tiene la relación FK con CASCADE configurada.
+**Verificación:** En Table Editor confirma que las tres tablas existen (`documents`, `document_chunks`, `analysis_sessions`) y que `analysis_sessions` tiene las columnas `quality_analysis`, `quality_status`, etc.
 
 ---
 
@@ -59,16 +56,24 @@ También crea el índice `idx_chunks_document` para consultas por `document_id`.
 
 ## 4. Crear el archivo `.env`
 
-**Por qué:** El backend necesita credenciales para conectarse a Supabase y un parámetro configurable para la retención de documentos. Estas variables no se hardcodean en el código (por seguridad y flexibilidad).
+**Por qué:** El backend necesita credenciales para conectarse a Supabase, keys para los LLMs, y un parámetro configurable para la retención de documentos. Estas variables no se hardcodean en el código (por seguridad y flexibilidad).
 
 **Cómo:**
 
 Crea un archivo `.env` en la raíz del proyecto (`document-intelligence/.env`) con el siguiente contenido:
 
 ```env
+# Supabase
 SUPABASE_URL=https://tu-proyecto.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 DOCUMENT_RETENTION_SECONDS=86400
+
+# LLM API Keys (obligatorias)
+GEMINI_API_KEY=tu-api-key-de-google-ai-studio
+GROQ_API_KEY=tu-api-key-de-groq
+
+# Opcional
+CORS_ORIGINS=http://localhost:5173
 ```
 
 **Variables:**
@@ -77,12 +82,15 @@ DOCUMENT_RETENTION_SECONDS=86400
 |---|---|---|
 | `SUPABASE_URL` | URL del proyecto | Dashboard → Settings → API → Project URL |
 | `SUPABASE_SERVICE_ROLE_KEY` | JWT service_role (secret) | Dashboard → Settings → API → service_role key |
+| `GEMINI_API_KEY` | API key de Google AI | [Google AI Studio](https://aistudio.google.com/apikey) |
+| `GROQ_API_KEY` | API key de Groq | [Groq Console](https://console.groq.com/keys) |
 | `DOCUMENT_RETENTION_SECONDS` | Segundos antes de expirar un documento | Configurable. Default sugerido: `86400` (24 horas) |
 
 **Notas sobre credenciales:**
 
 - Se usa la **service_role key** (formato JWT `eyJhbGciOi...`), no la anon key ni la nueva Secret Key (`sb_secret_...`).
 - La service_role key tiene acceso completo y bypasea RLS. No exponerla al frontend.
+- Las LLM API keys son obligatorias — sin ellas el backend lanza `ConfigurationError` al arrancar.
 - El `.gitignore` del proyecto ya incluye `.env` y `.env.*`, por lo que no se committeará.
 
 ---
@@ -108,35 +116,36 @@ python -c "import supabase; print(supabase.__version__)"
 
 ---
 
-## 6. Crear el módulo de configuración (se crea con el Task 9)
+## 6. Crear el módulo de configuración (ya implementado)
 
-**Por qué:** El código necesita un punto centralizado para leer las variables de entorno y exponer el cliente de Supabase al resto del backend.
+El código incluye un entrypoint (`src/backend/app/run.py`) que:
 
-Esto se implementa como parte del Task 9 e incluye:
-
-| Archivo | Propósito |
+| Responsabilidad | Implementación |
 |---|---|
-| `src/backend/app/config.py` | Lee variables de entorno, expone `Settings` con validación |
-| `src/backend/app/db/__init__.py` | Inicializa y expone el cliente `supabase-py` |
+| Carga `.env` desde la raíz del proyecto | `python-dotenv` (`load_dotenv`) |
+| Inicializa el cliente Supabase | `supabase.create_client(url, key)` |
+| Pasa el cliente al app factory | `create_app(supabase_client=...)` |
+| Lee CORS origins | Variable `CORS_ORIGINS` (default: `*`) |
 
-No es necesario crearlos manualmente — el Task 9 los genera.
+No es necesario crear estos módulos manualmente — ya existen.
 
 ---
 
 ## Checklist de verificación
 
-Antes de ejecutar el Task 9, confirma:
+Antes de ejecutar el backend, confirma:
 
-- [ ] Tablas `documents` y `document_chunks` creadas en Supabase
+- [ ] Tablas `documents`, `document_chunks` y `analysis_sessions` creadas en Supabase (3 migraciones)
 - [ ] Bucket `documents` creado en Storage (privado, 10 MB límite)
-- [ ] Archivo `.env` creado con `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y `DOCUMENT_RETENTION_SECONDS`
+- [ ] Archivo `.env` creado con `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY` y `DOCUMENT_RETENTION_SECONDS`
 - [ ] RLS habilitado sin políticas restrictivas
-- [ ] Dependencias instaladas (`supabase` disponible en el venv)
+- [ ] Dependencias instaladas (`supabase` y `litellm` disponibles en el entorno Python)
 
 ---
 
 ## Referencia
 
-- Migración SQL: `src/backend/app/db/migrations/001_create_documents.sql`
+- Migraciones SQL: `src/backend/app/db/migrations/001_create_documents.sql`, `002_create_analysis_sessions.sql`, `003_add_quality_analysis.sql`
+- Entry point del backend: `src/backend/app/run.py`
 - Diseño del StorageService: `.kiro/specs/document-ingestion/design.md` (sección Storage)
-- Stack tecnológico: `.kiro/steering/tech.md`
+- Stack tecnológico: `docs/architecture/001-technology-stack.md`

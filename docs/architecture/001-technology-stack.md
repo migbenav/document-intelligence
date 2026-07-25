@@ -16,9 +16,13 @@ Este documento registra las decisiones de stack tecnológico tomadas durante la 
 
 ## Decisiones tomadas
 
-### D-01 — Lenguaje del backend: Python 3.12+
+### D-01 — Lenguaje del backend: Python 3.12–3.14
 
 **Razón:** Ecosistema de IA maduro (SDKs oficiales de todos los proveedores, LiteLLM, librerías de parsing). Desarrollo rápido para hackathon. FastAPI con Pydantic permite definir los schemas del Knowledge Model con validación nativa.
+
+**Versión actual verificada:** Python 3.14.2
+
+**Restricción importante:** `litellm` debe fijarse a `==1.83.7` cuando se usa Python 3.14. Las versiones 1.84–1.92 declaran `Requires-Python: <3.14`, y la 1.93+ requiere compilar extensiones Rust (falla en Windows sin toolchain configurado). Esta restricción se resolverá cuando litellm publique wheels precompilados para 3.14.
 
 **Alternativas descartadas:**
 - Node.js/TypeScript: ecosistema de IA menos maduro, parsing de PDF más limitado.
@@ -71,6 +75,12 @@ CREATE TABLE analysis_sessions (
 ### D-05 — Abstracción del LLM: LiteLLM
 
 **Razón:** Cumple directamente ADR-005 (proveedor reemplazable sin modificar pipeline). Soporta 100+ proveedores con la misma interfaz. Permite routing multi-modelo, fallbacks automáticos, y rate limiting. Una línea de config cambia el proveedor.
+
+**Versión pinneada:** `1.83.7` — última versión con wheel precompilado compatible con Python 3.14 en Windows. Ver D-01 para detalles.
+
+**Variables de entorno requeridas:**
+- `GEMINI_API_KEY` — para el modelo principal (Gemini 2.5 Flash)
+- `GROQ_API_KEY` — para el modelo secundario/fallback (Groq Llama 3.3 70B)
 
 **Configuración conceptual:**
 
