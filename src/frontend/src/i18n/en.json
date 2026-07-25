@@ -1,0 +1,43 @@
+{
+  "app": {
+    "name": "Document Intelligence"
+  },
+  "upload": {
+    "title": "Upload a document",
+    "dropzone": "Drag and drop your file here, or click to browse",
+    "formats": "Supported formats: .md, .txt, .pdf",
+    "sizeLimits": "Max size: 1 MB (text), 10 MB (PDF)",
+    "button": "Upload and Analyze"
+  },
+  "consent": {
+    "title": "External Processing Notice",
+    "body": "Your document will be sent to an external AI service for analysis.",
+    "details": {
+      "sent": "Only the document text and system prompts are sent.",
+      "noPersonalData": "No personal data or usage history is transmitted.",
+      "retention": "Document content is not retained beyond the analysis session."
+    },
+    "accept": "I understand, proceed",
+    "decline": "Cancel"
+  },
+  "status": {
+    "uploading": "Uploading document...",
+    "coldStart": "Starting up, this may take a moment...",
+    "processing": "Extracting text content...",
+    "ready": "Document ready for analysis",
+    "failed": "Processing failed"
+  },
+  "errors": {
+    "unsupportedFormat": "This file format is not supported. Please upload a .md, .txt, or .pdf file.",
+    "fileTooLarge": "File exceeds the size limit of {limit}.",
+    "networkError": "Connection failed. Please check your network and try again.",
+    "serverError": "Processing failed, please try again.",
+    "connectivity": "Unable to reach the server. Please check your connection.",
+    "noContent": "No extractable content was found in this document."
+  },
+  "actions": {
+    "retry": "Try again",
+    "startOver": "Start over",
+    "selectFile": "Select a file"
+  }
+}

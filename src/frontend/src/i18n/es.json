@@ -1,0 +1,43 @@
+{
+  "app": {
+    "name": "Document Intelligence"
+  },
+  "upload": {
+    "title": "Subir un documento",
+    "dropzone": "Arrastra y suelta tu archivo aquí, o haz clic para buscar",
+    "formats": "Formatos admitidos: .md, .txt, .pdf",
+    "sizeLimits": "Tamaño máximo: 1 MB (texto), 10 MB (PDF)",
+    "button": "Subir y Analizar"
+  },
+  "consent": {
+    "title": "Aviso de Procesamiento Externo",
+    "body": "Tu documento será enviado a un servicio externo de IA para su análisis.",
+    "details": {
+      "sent": "Solo se envían el texto del documento y los prompts del sistema.",
+      "noPersonalData": "No se transmiten datos personales ni historial de uso.",
+      "retention": "El contenido del documento no se retiene más allá de la sesión de análisis."
+    },
+    "accept": "Entiendo, continuar",
+    "decline": "Cancelar"
+  },
+  "status": {
+    "uploading": "Subiendo documento...",
+    "coldStart": "Iniciando, esto puede tomar un momento...",
+    "processing": "Extrayendo contenido de texto...",
+    "ready": "Documento listo para análisis",
+    "failed": "Procesamiento fallido"
+  },
+  "errors": {
+    "unsupportedFormat": "Este formato de archivo no es compatible. Por favor sube un archivo .md, .txt o .pdf.",
+    "fileTooLarge": "El archivo excede el límite de tamaño de {limit}.",
+    "networkError": "Conexión fallida. Por favor revisa tu red e intenta de nuevo.",
+    "serverError": "Procesamiento fallido, por favor intenta de nuevo.",
+    "connectivity": "No se puede conectar al servidor. Por favor revisa tu conexión.",
+    "noContent": "No se encontró contenido extraíble en este documento."
+  },
+  "actions": {
+    "retry": "Intentar de nuevo",
+    "startOver": "Comenzar de nuevo",
+    "selectFile": "Seleccionar un archivo"
+  }
+}
