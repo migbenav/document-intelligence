@@ -4,7 +4,9 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import App from '@/App';
 import { TranslationProvider } from '@/i18n';
 import { useUploadStore } from '@/store/uploadStore';
+import { useKnowledgeModelStore } from '@/store/knowledgeModelStore';
 import type { UploadResponse, StatusResponse } from '@/types/api';
+import type { KnowledgeModelResponse } from '@/types/knowledgeModel';
 
 // --- Mock the API module ---
 vi.mock('@/api/documents', () => ({
@@ -20,10 +22,35 @@ vi.mock('@/api/documents', () => ({
   },
 }));
 
+// --- Mock the Knowledge Model API module ---
+vi.mock('@/api/knowledgeModel', () => ({
+  getKnowledgeModel: vi.fn(),
+  KnowledgeModelApiError: class KnowledgeModelApiError extends Error {
+    public readonly status: number;
+    public readonly code: string;
+    constructor(status: number, message: string) {
+      super(message);
+      this.name = 'KnowledgeModelApiError';
+      this.status = status;
+      this.code = status === 404 ? 'not_found' : status === 409 ? 'not_ready' : 'unknown';
+    }
+  },
+  KnowledgeModelNetworkError: class KnowledgeModelNetworkError extends Error {
+    public readonly code: string;
+    constructor(code: string, message: string) {
+      super(message);
+      this.name = 'KnowledgeModelNetworkError';
+      this.code = code;
+    }
+  },
+}));
+
 import { uploadDocument, getDocumentStatus } from '@/api/documents';
+import { getKnowledgeModel } from '@/api/knowledgeModel';
 
 const mockUploadDocument = vi.mocked(uploadDocument);
 const mockGetDocumentStatus = vi.mocked(getDocumentStatus);
+const mockGetKnowledgeModel = vi.mocked(getKnowledgeModel);
 
 // --- Helpers ---
 
@@ -67,17 +94,53 @@ function createStatusResponse(overrides: Partial<StatusResponse> = {}): StatusRe
   };
 }
 
+function createKnowledgeModelResponse(): KnowledgeModelResponse {
+  return {
+    document_id: 'test-doc-123',
+    document_type: 'requirements',
+    elements: [
+      {
+        id: 'el-1',
+        type: 'concepto',
+        name: 'Test Concept',
+        content: 'A test concept description',
+        source_ref: {
+          document_id: 'test-doc-123',
+          chunk_id: 'chunk-1',
+          page: null,
+          section: 'Introduction',
+          evidence: 'Test evidence text',
+        },
+        relations: [],
+        verified: true,
+      },
+    ],
+    extraction_metadata: {
+      prompt_version: '1.0',
+      model_id: 'test-model',
+      temperature: 0.2,
+      element_count: 1,
+      relationship_count: 0,
+      verification_rate: 0.85,
+      extracted_at: '2024-01-01T00:00:00Z',
+    },
+  };
+}
+
 // --- Tests ---
 
 describe('Upload Flow Integration', () => {
   beforeEach(() => {
     useUploadStore.getState().reset();
+    useKnowledgeModelStore.getState().reset();
     mockUploadDocument.mockReset();
     mockGetDocumentStatus.mockReset();
+    mockGetKnowledgeModel.mockReset();
   });
 
   afterEach(() => {
     useUploadStore.getState().reset();
+    useKnowledgeModelStore.getState().reset();
   });
 
   it('renders the upload page with upload zone in idle state', () => {
@@ -117,7 +180,7 @@ describe('Upload Flow Integration', () => {
     expect(screen.getByRole('button', { name: 'I understand, proceed' })).toBeInTheDocument();
   });
 
-  it('completes full flow: file select → consent → upload → poll → ready', async () => {
+  it('completes full flow: file select \u2192 consent \u2192 upload \u2192 poll \u2192 KM page', async () => {
     // Mock upload to resolve with 202 response
     mockUploadDocument.mockImplementation((_file, options) => {
       // Simulate progress
@@ -143,6 +206,9 @@ describe('Upload Flow Integration', () => {
       }));
     });
 
+    // Mock knowledge model API to return a valid response when document is ready
+    mockGetKnowledgeModel.mockResolvedValue(createKnowledgeModelResponse());
+
     renderApp();
 
     // Step 1: Select file
@@ -154,14 +220,14 @@ describe('Upload Flow Integration', () => {
 
     expect(screen.getByText('test-document.md')).toBeInTheDocument();
 
-    // Step 2: Click upload button → opens consent dialog
+    // Step 2: Click upload button \u2192 opens consent dialog
     await act(async () => {
       await userEvent.click(screen.getByTestId('upload-button'));
     });
 
     expect(screen.getByText('External Processing Notice')).toBeInTheDocument();
 
-    // Step 3: Accept consent → triggers upload
+    // Step 3: Accept consent \u2192 triggers upload
     await act(async () => {
       await userEvent.click(screen.getByRole('button', { name: 'I understand, proceed' }));
     });
@@ -174,12 +240,26 @@ describe('Upload Flow Integration', () => {
       { timeout: 10000 },
     );
 
-    // Verify success UI
-    expect(screen.getByText('Document ready for analysis')).toBeInTheDocument();
-    expect(screen.getByTestId('result-filename')).toHaveTextContent('test-document.md');
-    expect(screen.getByTestId('result-language')).toHaveTextContent('en');
-    expect(screen.getByTestId('result-chunk-count')).toHaveTextContent('5');
-    expect(screen.getByText('Complex table skipped on page 3')).toBeInTheDocument();
+    // Step 5: AppShell transitions to KnowledgeModelPage on ready state
+    await waitFor(
+      () => {
+        expect(screen.getByTestId('km-page')).toBeInTheDocument();
+      },
+      { timeout: 5000 },
+    );
+
+    // Verify the knowledge model was fetched with the correct document id
+    expect(mockGetKnowledgeModel).toHaveBeenCalledWith('test-doc-123');
+
+    // Verify the KM page loaded successfully with element data
+    await waitFor(() => {
+      expect(screen.getByText('Test Concept')).toBeInTheDocument();
+    });
+
+    // Verify the verification rate is displayed
+    await waitFor(() => {
+      expect(screen.getByText(/85%/)).toBeInTheDocument();
+    });
   }, 15000);
 
   it('shows error display on upload failure and allows start over', async () => {
@@ -198,7 +278,7 @@ describe('Upload Flow Integration', () => {
       await userEvent.upload(input, file);
     });
 
-    // Click upload → consent
+    // Click upload \u2192 consent
     await act(async () => {
       await userEvent.click(screen.getByTestId('upload-button'));
     });
@@ -237,7 +317,7 @@ describe('Upload Flow Integration', () => {
       await userEvent.upload(input, file);
     });
 
-    // Click upload → consent
+    // Click upload \u2192 consent
     await act(async () => {
       await userEvent.click(screen.getByTestId('upload-button'));
     });

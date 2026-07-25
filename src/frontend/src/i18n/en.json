@@ -39,5 +39,58 @@
     "retry": "Try again",
     "startOver": "Start over",
     "selectFile": "Select a file"
+  },
+  "km": {
+    "title": "Knowledge Model",
+    "verificationRate": "{rate}% of elements verified",
+    "viewMode": {
+      "list": "List view",
+      "graph": "Graph view"
+    },
+    "typeGroups": {
+      "proposito": "Purpose",
+      "concepto": "Concepts",
+      "actor": "Actors",
+      "regla": "Rules",
+      "proceso": "Processes",
+      "restriccion": "Constraints"
+    },
+    "element": {
+      "verified": "Verified: evidence confirmed in source document",
+      "notVerified": "Not verified: evidence not found in source document",
+      "evidence": "Source Evidence",
+      "evidenceError": "Evidence could not be loaded",
+      "relatedElements": "Related Elements",
+      "noRelatedElements": "No relationships identified"
+    },
+    "relationships": {
+      "constrains": "Constrains",
+      "participates_in": "Participates in",
+      "depends_on": "Depends on",
+      "contradicts": "Contradicts"
+    },
+    "graph": {
+      "noRelationships": "No relationships were identified in this document. Relationships are optional and are extracted when the system identifies them with sufficient confidence.",
+      "accessibleView": "View as accessible list"
+    },
+    "states": {
+      "loading": "Loading Knowledge Model...",
+      "empty": "No knowledge elements were extracted from this document.",
+      "error": {
+        "network": "Unable to reach the server. Please check your connection.",
+        "notFound": "Document not found.",
+        "notReady": "Analysis is not yet completed. Please wait and try again.",
+        "generic": "Failed to load the Knowledge Model."
+      },
+      "retry": "Try again"
+    },
+    "navigation": {
+      "back": "Back",
+      "close": "Close details"
+    },
+    "count": {
+      "elements": "{count} elements",
+      "noElements": "No elements"
+    }
   }
 }

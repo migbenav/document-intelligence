@@ -39,5 +39,58 @@
     "retry": "Intentar de nuevo",
     "startOver": "Comenzar de nuevo",
     "selectFile": "Seleccionar un archivo"
+  },
+  "km": {
+    "title": "Modelo de Conocimiento",
+    "verificationRate": "{rate}% de elementos verificados",
+    "viewMode": {
+      "list": "Vista de lista",
+      "graph": "Vista de grafo"
+    },
+    "typeGroups": {
+      "proposito": "Propósito",
+      "concepto": "Conceptos",
+      "actor": "Actores",
+      "regla": "Reglas",
+      "proceso": "Procesos",
+      "restriccion": "Restricciones"
+    },
+    "element": {
+      "verified": "Verificado: evidencia confirmada en el documento fuente",
+      "notVerified": "No verificado: evidencia no encontrada en el documento fuente",
+      "evidence": "Evidencia de Origen",
+      "evidenceError": "No se pudo cargar la evidencia",
+      "relatedElements": "Elementos Relacionados",
+      "noRelatedElements": "No se identificaron relaciones"
+    },
+    "relationships": {
+      "constrains": "Restringe",
+      "participates_in": "Participa en",
+      "depends_on": "Depende de",
+      "contradicts": "Contradice"
+    },
+    "graph": {
+      "noRelationships": "No se identificaron relaciones en este documento. Las relaciones son opcionales y se extraen cuando el sistema las identifica con suficiente confianza.",
+      "accessibleView": "Ver como lista accesible"
+    },
+    "states": {
+      "loading": "Cargando Modelo de Conocimiento...",
+      "empty": "No se extrajeron elementos de conocimiento de este documento.",
+      "error": {
+        "network": "No se puede conectar al servidor. Por favor revisa tu conexión.",
+        "notFound": "Documento no encontrado.",
+        "notReady": "El análisis aún no se ha completado. Por favor espera e intenta de nuevo.",
+        "generic": "Error al cargar el Modelo de Conocimiento."
+      },
+      "retry": "Intentar de nuevo"
+    },
+    "navigation": {
+      "back": "Volver",
+      "close": "Cerrar detalles"
+    },
+    "count": {
+      "elements": "{count} elementos",
+      "noElements": "Sin elementos"
+    }
   }
 }
