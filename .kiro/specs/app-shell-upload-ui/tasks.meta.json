@@ -1,0 +1,206 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1. Frontend project scaffolding": [
+      {
+        "executionId": "3a3f35b3-8579-4232-afca-7a3dfd5a7bfe",
+        "chatSessionId": "sess_f5f6eeab-e3bf-4b6a-9579-4001f3fc0a34",
+        "timestamp": 1784946412943
+      },
+      {
+        "executionId": "3a3f35b3-8579-4232-afca-7a3dfd5a7bfe",
+        "chatSessionId": "sess_f5f6eeab-e3bf-4b6a-9579-4001f3fc0a34",
+        "timestamp": 1784947102462
+      }
+    ],
+    "2. API client layer": [
+      {
+        "executionId": "4c35b646-1613-4cb9-8ea5-7deba7870b03",
+        "chatSessionId": "sess_807cab42-b3bb-457e-9d43-1de38ae576e0",
+        "timestamp": 1784947361607
+      },
+      {
+        "executionId": "4c35b646-1613-4cb9-8ea5-7deba7870b03",
+        "chatSessionId": "sess_807cab42-b3bb-457e-9d43-1de38ae576e0",
+        "timestamp": 1784947799306
+      }
+    ],
+    "3. Internationalization infrastructure": [
+      {
+        "executionId": "c19fb3df-0dd9-44c8-bd82-2436dd968216",
+        "chatSessionId": "sess_29f3a393-85ad-4a21-98d1-0fb8b38e83ef",
+        "timestamp": 1784947917701
+      },
+      {
+        "executionId": "c19fb3df-0dd9-44c8-bd82-2436dd968216",
+        "chatSessionId": "sess_29f3a393-85ad-4a21-98d1-0fb8b38e83ef",
+        "timestamp": 1784948053848
+      }
+    ],
+    "4. Zustand upload store": [
+      {
+        "executionId": "52130790-fae6-4754-af49-6aa5f98094d2",
+        "chatSessionId": "sess_74a60ef5-bef5-4cc3-a08c-a3fc7e2a682b",
+        "timestamp": 1784948238174
+      },
+      {
+        "executionId": "52130790-fae6-4754-af49-6aa5f98094d2",
+        "chatSessionId": "sess_74a60ef5-bef5-4cc3-a08c-a3fc7e2a682b",
+        "timestamp": 1784948740016
+      }
+    ],
+    "5. Application shell layout": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814423
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948830849
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949285572
+      }
+    ],
+    "6. Client-side file validation": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814507
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948831434
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949286122
+      }
+    ],
+    "7. Upload zone component": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814555
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949297920
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949477894
+      }
+    ],
+    "8. Consent dialog component": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814602
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949298623
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949478602
+      }
+    ],
+    "9. Upload progress component": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814651
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949486580
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949643357
+      }
+    ],
+    "10. Processing status component": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814688
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949487248
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949644014
+      }
+    ],
+    "11. Error display component": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814750
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949648179
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949792430
+      }
+    ],
+    "12. Upload page orchestration": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814815
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784949796813
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784950490043
+      }
+    ],
+    "13. Backend CORS update and end-to-end verification": [
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784948814852
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784950494719
+      },
+      {
+        "executionId": "06220701-cc63-47e8-a4cc-d805a270e279",
+        "chatSessionId": "sess_d175e5a5-9d1a-4ac5-937d-d9517faada93",
+        "timestamp": 1784950813351
+      }
+    ]
+  }
+}
