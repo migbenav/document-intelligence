@@ -134,14 +134,14 @@ npm run test
 
 ## Estado del proyecto
 
-🚧 En desarrollo activo — Feature 1 completada, Features 2-7 pendientes.
+🚧 En desarrollo activo — Features 1–4 completadas, Features 5–7 pendientes.
 
 | Feature | Estado | Descripción |
 |---------|--------|-------------|
 | 1. Document Ingestion | ✅ Completada | Upload, validación, parsing (PDF/MD/TXT), detección de idioma, IR, persistencia |
-| 2. Application Shell & Upload UI | 🔲 Pendiente | Frontend base con upload, progreso, consentimiento |
-| 3. Knowledge Model Extraction | 🔲 Pendiente | Motor de análisis con LLM, extracción del Knowledge Model |
-| 4. KM Visualization & Exploration | 🔲 Pendiente | Visualización de elementos y relaciones |
+| 2. Application Shell & Upload UI | ✅ Completada | Frontend shell, upload con drag & drop, progreso, consentimiento, error recovery |
+| 3. Knowledge Model Extraction | ✅ Completada | Motor de análisis con LLM, inferencia de tipo, extracción del KM, verificación de evidencia |
+| 4. KM Visualization & Exploration | ✅ Completada | Vista de lista/grafo, panel de detalle, evidencia, navegación por teclado, accesibilidad |
 | 5. Document Quality Analysis | 🔲 Pendiente | Inconsistencias, faltantes, sugerencias |
 | 6. Natural Language Queries | 🔲 Pendiente | Chat sobre el documento con evidencia trazable |
 | 7. User Feedback | 🔲 Pendiente | Marcar elementos como incorrectos/irrelevantes |
@@ -157,6 +157,9 @@ Base URL: `http://localhost:8000/api/v1/documents`
 | POST | `/upload` | Cargar un documento para procesamiento |
 | GET | `/{id}/status` | Estado del procesamiento |
 | GET | `/{id}/ir` | Representación intermedia generada |
+| POST | `/{id}/analyze` | Iniciar análisis del documento |
+| POST | `/{id}/confirm-type` | Confirmar tipo de documento |
+| GET | `/{id}/knowledge-model` | Obtener el Knowledge Model generado |
 
 Documentación interactiva disponible en `http://localhost:8000/docs` (Swagger UI).
 

@@ -1,6 +1,6 @@
 # MVP Roadmap — Document Intelligence
 
-> Fecha: 2026-07-24
+> Fecha: 2026-07-25
 > Basado en: PRD v0.6, ADRs 001-006, Spec MVP v0.6
 > Estrategia: Desarrollo vertical (cada feature incluye backend + API + persistencia + UI mínima)
 
@@ -44,7 +44,7 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 | Aspecto | Detalle |
 |---------|---------|
 | **Objetivo** | Crear la estructura base del frontend (React + TypeScript + Vite) con una interfaz mínima que permita cargar documentos y ver el estado del procesamiento. Establecer la infraestructura de comunicación con el backend. |
-| **Estado** | 🔲 Pendiente |
+| **Estado** | ✅ Completada |
 | **Capacidades PRD** | C1 (parte visual), C7 (consentimiento — UI del aviso previo al análisis) |
 | **ADRs relacionados** | ADR-005 (transparencia: informar al usuario antes del procesamiento), ADR-003 (formatos soportados para la UI de upload) |
 | **Dependencias** | Feature 1 (Document Ingestion — el backend de upload ya existe) |
@@ -57,6 +57,15 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 - Estado global (Zustand) para documento activo
 - Componente de consentimiento (ADR-005: informar y requerir autorización)
 
+**Componentes implementados:**
+- Frontend: Vite + React 18 + TypeScript 5 + Tailwind CSS + shadcn/ui + Zustand
+- Componentes: AppShell, Header, UploadZone, FileInfo, ConsentDialog, UploadProgress, ProcessingStatus, ErrorDisplay, UploadPage
+- Estado: Zustand uploadStore con state machine (idle→file-selected→consent→uploading→processing→ready/error)
+- API client: documents.ts (upload con progreso + polling de status)
+- i18n: Traducciones completas inglés + español
+- Tests: Unit tests + integration test del flujo completo con MSW
+- Backend: Configuración CORS
+
 ---
 
 ### Feature 3: Analysis Engine — Knowledge Model Extraction
@@ -64,7 +73,7 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 | Aspecto | Detalle |
 |---------|---------|
 | **Objetivo** | Implementar el motor de análisis que consume el IR y produce un Knowledge Model: elementos tipados (propósito, conceptos, actores, reglas, procesos, restricciones) con relaciones opcionales (constrains, participates_in, depends_on, contradicts). Incluye inferencia de tipo de documento. |
-| **Estado** | 🔲 Pendiente |
+| **Estado** | ✅ Completada |
 | **Capacidades PRD** | C2 (Comprensión documental), C6 (Trust by Evidence — source_ref en cada elemento) |
 | **ADRs relacionados** | ADR-002 (Knowledge Model híbrido, taxonomía fija, relaciones opcionales), ADR-004 (source_ref, verificación de evidencia, reproducibilidad), ADR-005 (solo enviar texto + prompts, abstracción del proveedor), ADR-006 (tipos de documento, inferencia + confirmación, vocabulario de relaciones) |
 | **Dependencias** | Feature 1 (IR como input), Feature 2 (UI de consentimiento — debe existir antes de enviar al LLM) |
@@ -76,6 +85,14 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 - Persistencia: tabla knowledge_elements, tabla analysis_sessions
 - Frontend: selector de tipo de documento (inferencia + confirmación), indicador de progreso del análisis
 
+**Componentes implementados:**
+- Backend: AnalysisService (orquestador), LLM client (LiteLLM), extraction service, type inference, evidence verification
+- Prompts: Templates versionados para extracción e inferencia de tipo
+- Modelos: KnowledgeElement, KnowledgeModel, AnalysisSession, SourceRef, Relation, ExtractionMetadata
+- API: POST /analyze, POST /confirm-type, GET /knowledge-model
+- Persistencia: Tablas analysis_sessions + knowledge_elements
+- Tests: Unitarios e integración
+
 ---
 
 ### Feature 4: Knowledge Model Visualization & Exploration
@@ -83,7 +100,7 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 | Aspecto | Detalle |
 |---------|---------|
 | **Objetivo** | Permitir al usuario visualizar y explorar los elementos del Knowledge Model de forma estructurada. Navegar relaciones entre elementos. Ver la evidencia (source_ref) de cada elemento. |
-| **Estado** | 🔲 Pendiente |
+| **Estado** | ✅ Completada |
 | **Capacidades PRD** | C3 (Exploración del conocimiento), C6 (visualización de source_ref) |
 | **ADRs relacionados** | ADR-002 (elementos tipados con relaciones → visualización), ADR-004 (source_ref visible al usuario para verificación) |
 | **Dependencias** | Feature 3 (Knowledge Model generado) |
@@ -93,6 +110,14 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 - Frontend: componentes de visualización de elementos, panel de detalle, vista de relaciones (graph o lista según complejidad)
 - Backend: endpoint GET /{id}/knowledge-model ya existe desde Feature 3
 - Sin lógica de backend adicional significativa
+
+**Componentes implementados:**
+- Frontend: 15 componentes React para visualización del KM
+- Vistas: Lista agrupada por tipo + grafo de relaciones (React Flow + dagre)
+- Panel de detalle: Contenido completo, evidencia, elementos relacionados, navegación con historial
+- Accesibilidad: jest-axe, navegación por teclado, focus management, lista accesible alternativa, encoding no-cromático
+- Estado: knowledgeModelStore (Zustand) con cache, navigation history (cap 50), view mode
+- Tests: 382 tests en 31 archivos (unit, component, property-based con fast-check, accessibility)
 
 ---
 
@@ -157,15 +182,15 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 Feature 1: Document Ingestion ✅
     │
     ▼
-Feature 2: Application Shell & Upload UI
+Feature 2: Application Shell & Upload UI ✅
     │
     ▼
-Feature 3: Analysis Engine (Knowledge Model Extraction)
+Feature 3: Analysis Engine (Knowledge Model Extraction) ✅
     │
     ├─────────────────────┬──────────────────────┐
     ▼                     ▼                      ▼
 Feature 4:          Feature 5:             Feature 6:
-Visualization       Quality Analysis       NL Queries
+Visualization ✅    Quality Analysis       NL Queries
     │
     ▼
 Feature 7: User Feedback (Should Have)
@@ -178,9 +203,9 @@ Feature 7: User Feedback (Should Have)
 | # | Feature | Estado | Prioridad | Esfuerzo estimado |
 |---|---------|--------|-----------|-------------------|
 | 1 | Document Ingestion | ✅ Completada | Must Have | — |
-| 2 | Application Shell & Upload UI | 🔲 Pendiente | Must Have | Medio |
-| 3 | Analysis Engine (KM Extraction) | 🔲 Pendiente | Must Have | Alto |
-| 4 | KM Visualization & Exploration | 🔲 Pendiente | Must Have | Medio |
+| 2 | Application Shell & Upload UI | ✅ Completada | Must Have | — |
+| 3 | Analysis Engine (KM Extraction) | ✅ Completada | Must Have | — |
+| 4 | KM Visualization & Exploration | ✅ Completada | Must Have | — |
 | 5 | Document Quality Analysis | 🔲 Pendiente | Must Have | Alto |
 | 6 | Natural Language Queries | 🔲 Pendiente | Must Have | Medio |
 | 7 | User Feedback | 🔲 Pendiente | Should Have | Bajo |

@@ -13,8 +13,11 @@ Antes de empezar, verifica que tienes instalado:
 | Python | 3.12+ | `python --version` |
 | pip | 23+ | `pip --version` |
 | Git | 2.30+ | `git --version` |
+| Node.js | 18+ | `node --version` |
 
 **Por qué Python 3.12+:** El proyecto usa sintaxis moderna (`type` statements, mejorado `match`, performance improvements) y el `pyproject.toml` lo declara como requisito.
+
+**Por qué Node.js 18+:** El frontend usa Vite, React 18 y las últimas APIs de Node.js.
 
 ---
 
@@ -127,7 +130,56 @@ Este paso se documenta en detalle en [supabase-setup.md](./supabase-setup.md). R
 
 ---
 
-## 7. Verificar la instalación
+## 7. Frontend — Instalar dependencias
+
+```bash
+cd src/frontend
+npm install
+```
+
+**Desde dónde:** `src/frontend/` — el proyecto React/Vite con su `package.json`.
+
+**Qué instala:**
+
+| Grupo | Paquetes principales | Propósito |
+|---|---|---|
+| Core | react, react-dom, zustand, reactflow, @dagrejs/dagre, tailwindcss | Runtime del frontend |
+| UI | @radix-ui/*, class-variance-authority, lucide-react, tailwind-merge | Componentes y estilos |
+| Dev | vite, typescript, vitest, @testing-library/react, fast-check, jest-axe | Build, tipos, testing |
+
+**Cuándo:** La primera vez, y cada vez que se modifique `package.json` con nuevas dependencias.
+
+---
+
+## 8. Frontend — Ejecutar tests
+
+Desde `src/frontend/`:
+
+```bash
+npm test
+```
+
+**Qué esperar:** 382 tests pasando en 31 archivos de test (store, components, properties, accessibility, integration).
+
+---
+
+## 9. Frontend — Servidor de desarrollo
+
+Desde `src/frontend/`:
+
+```bash
+npm run dev
+```
+
+**Puerto:** http://localhost:5173 por defecto (Vite).
+
+**Requiere:** El backend corriendo en puerto 8000 para las llamadas API. La variable `VITE_API_BASE_URL` en `.env` del frontend (o el default http://localhost:8000) configura la conexión.
+
+**Cuándo:** Para desarrollo visual y pruebas manuales del flujo completo.
+
+---
+
+## 10. Verificar la instalación
 
 Desde la raíz del proyecto (`document-intelligence/`), con el venv activado:
 
@@ -141,7 +193,7 @@ python -m pytest tests/unit -v
 
 ---
 
-## 8. Ejecutar el backend (desarrollo)
+## 11. Ejecutar el backend (desarrollo)
 
 Desde `src/backend/` con el venv activado:
 
@@ -184,11 +236,13 @@ document-intelligence/
 
 | Paso | Requerido a partir de |
 |---|---|
-| Entorno virtual + dependencias | Task 1 (cualquier desarrollo) |
-| Archivo `.env` | Task 9 (Storage Service) |
-| Tablas en Supabase | Task 9 (Storage Service) |
-| Bucket en Supabase Storage | Task 9 (Storage Service) |
-| Ejecutar el backend (`uvicorn`) | Task 11 (API endpoints) |
+| Python venv + dependencias | Backend (cualquier desarrollo) |
+| Node.js + npm install | Frontend (cualquier desarrollo) |
+| Archivo `.env` | Backend Task 9 (Storage Service) |
+| Tablas en Supabase | Backend Task 9 (Storage Service) |
+| Bucket en Supabase Storage | Backend Task 9 (Storage Service) |
+| Ejecutar el backend (`uvicorn`) | Test manual end-to-end |
+| Ejecutar el frontend (`npm run dev`) | Test manual end-to-end |
 
 ---
 
@@ -224,6 +278,24 @@ python -m pytest tests/unit -v
 pip install -e ".[dev]"
 python -c "import supabase; print(supabase.__version__)"
 ```
+
+### Frontend `npm test` falla con módulos no encontrados
+
+**Causa:** Las dependencias no se instalaron correctamente.
+
+**Solución:**
+```bash
+cd src/frontend
+rm -rf node_modules
+npm install
+npm test
+```
+
+### React Flow tests fallan en CI
+
+**Causa:** React Flow requiere medidas DOM no disponibles en jsdom.
+
+**Solución:** Los tests de RelationshipGraphView mockean React Flow. Verificar que el mock está en su lugar en el archivo de test.
 
 ---
 
