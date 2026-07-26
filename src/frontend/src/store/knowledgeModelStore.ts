@@ -4,6 +4,7 @@ import {
   KnowledgeModelApiError,
   KnowledgeModelNetworkError,
 } from '@/api/knowledgeModel';
+import { runFullAnalysis } from '@/api/analysis';
 import type { KnowledgeModelResponse } from '@/types/knowledgeModel';
 
 // --- Types ---
@@ -33,6 +34,31 @@ export interface KnowledgeModelStore {
 // --- Constants ---
 
 const MAX_HISTORY_LENGTH = 50;
+const KM_POLL_INTERVAL_MS = 3_000;
+const KM_POLL_MAX_ATTEMPTS = 40; // 40 * 3s = 2 minutes max
+
+// --- Helpers ---
+
+async function pollForKnowledgeModel(
+  documentId: string,
+): Promise<KnowledgeModelResponse> {
+  for (let i = 0; i < KM_POLL_MAX_ATTEMPTS; i++) {
+    try {
+      return await getKnowledgeModel(documentId);
+    } catch (err) {
+      // If not ready or not found, wait and retry
+      if (
+        err instanceof KnowledgeModelApiError &&
+        (err.code === 'not_ready' || err.code === 'not_found')
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, KM_POLL_INTERVAL_MS));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('Analysis timed out. The document may be too large or the server is busy.');
+}
 
 // --- Initial State ---
 
@@ -78,13 +104,32 @@ export const useKnowledgeModelStore = create<KnowledgeModelStore>((set, get) => 
         set({ status: 'loaded', knowledgeModel: response });
       }
     } catch (err) {
+      // If KM not found, auto-trigger the analysis pipeline
+      if (err instanceof KnowledgeModelApiError && (err.code === 'not_found' || err.code === 'not_ready')) {
+        try {
+          await runFullAnalysis(documentId);
+          // Poll for KM with retries (analysis may take time)
+          const response = await pollForKnowledgeModel(documentId);
+          if (response.elements.length === 0) {
+            set({ status: 'empty', knowledgeModel: response });
+          } else {
+            set({ status: 'loaded', knowledgeModel: response });
+          }
+          return;
+        } catch (analysisErr) {
+          const message =
+            analysisErr instanceof Error
+              ? analysisErr.message
+              : 'Analysis failed. Please try again.';
+          set({ status: 'error', error: message });
+          return;
+        }
+      }
+
       let message: string;
 
       if (err instanceof KnowledgeModelApiError) {
         switch (err.code) {
-          case 'not_found':
-            message = 'Document not found.';
-            break;
           case 'not_ready':
             message = 'Analysis is not yet completed. Please wait and try again.';
             break;
