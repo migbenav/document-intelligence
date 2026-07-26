@@ -1,0 +1,432 @@
+{
+  "pbtResults": {},
+  "executionHistory": {
+    "1.1 Create DocumentCard Pydantic models": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097518000
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097528588
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097675313
+      }
+    ],
+    "1.2 Create database migration": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097518198
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097529140
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097675781
+      }
+    ],
+    "1.3 Write unit tests for card models": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097518341
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097680410
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098000317
+      }
+    ],
+    "2.1 Create LocalAnalyzer module": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097518528
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097680937
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098001051
+      }
+    ],
+    "2.2 Write unit tests for LocalAnalyzer": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097518693
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098007118
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098246254
+      }
+    ],
+    "3.1 Create LLMAnalyzer module and prompt template": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097518854
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097681635
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098001745
+      }
+    ],
+    "3.2 Write unit tests for LLMAnalyzer": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519065
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098007831
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098246928
+      }
+    ],
+    "4.1 Create BaseAnalysisStorage module": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519201
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097682316
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098002565
+      }
+    ],
+    "4.2 Write unit tests for BaseAnalysisStorage": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519301
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098008578
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098247661
+      }
+    ],
+    "5.1 Create BaseAnalysisService module": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519418
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098252858
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098462095
+      }
+    ],
+    "5.2 Write unit tests for BaseAnalysisService": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519571
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098466874
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098795289
+      }
+    ],
+    "6.1 Create card API router": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519661
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098467595
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098796169
+      }
+    ],
+    "6.2 Write integration tests for API endpoints": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519747
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098800861
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785099620908
+      }
+    ],
+    "7.1 Add BackgroundTask trigger": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519828
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098801499
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785099621633
+      }
+    ],
+    "7.2 Write end-to-end integration test": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097519923
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785099627040
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100629574
+      }
+    ],
+    "8.1 Create TypeScript interfaces": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097520024
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785099627589
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100630111
+      }
+    ],
+    "8.2 Create API client functions": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097520125
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785099628290
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100630791
+      }
+    ],
+    "8.3 Create Zustand store": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097520265
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785099629009
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100631499
+      }
+    ],
+    "9.1 Create DocumentCardSkeleton": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097520343
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100636550
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100945875
+      }
+    ],
+    "9.2 Create DocumentCardView": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097520441
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100637165
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100946306
+      }
+    ],
+    "10.1 Implement polling and integration": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785097520571
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100951532
+      },
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785101433200
+      }
+    ],
+    "1. Define document card data models and database migration": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098000419
+      }
+    ],
+    "2. Implement LocalAnalyzer": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098246395
+      }
+    ],
+    "3. Implement LLMAnalyzer": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098247050
+      }
+    ],
+    "4. Implement BaseAnalysisStorage": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098247781
+      }
+    ],
+    "5. Implement BaseAnalysisService orchestrator": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785098795381
+      }
+    ],
+    "6. Implement API endpoints": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785099621018
+      }
+    ],
+    "7. Integrate with ingestion pipeline": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100629670
+      }
+    ],
+    "8. Implement frontend store and API client": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100631617
+      }
+    ],
+    "9. Implement frontend card components": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785100946414
+      }
+    ],
+    "10. Integrate card into post-upload flow": [
+      {
+        "executionId": "03f435f1-58cb-4818-81c6-2ba393196f10",
+        "chatSessionId": "sess_a50fbc10-8804-47a4-a9ad-81af2453b800",
+        "timestamp": 1785101433369
+      }
+    ]
+  }
+}

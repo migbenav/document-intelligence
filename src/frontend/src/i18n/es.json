@@ -93,6 +93,10 @@
       "noElements": "Sin elementos"
     }
   },
+  "card": {
+    "pollExhausted": "El análisis está tardando más de lo esperado. Puedes intentar obtener la ficha manualmente.",
+    "manualRetry": "Obtener ficha"
+  },
   "query": {
     "evidence": {
       "verified": "Verificado",

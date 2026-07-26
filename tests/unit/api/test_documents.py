@@ -10,7 +10,11 @@ from unittest.mock import AsyncMock
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.api.v1.documents import _get_ingestion_service, _get_storage_service
+from app.api.v1.documents import (
+    _get_base_analysis_service,
+    _get_ingestion_service,
+    _get_storage_service,
+)
 from app.main import create_app
 from app.models.document import (
     ContentChunkModel,
@@ -35,11 +39,18 @@ def mock_storage_service():
 
 
 @pytest.fixture
-def app(mock_ingestion_service, mock_storage_service):
+def mock_base_analysis_service():
+    """Create a mock BaseAnalysisService."""
+    return AsyncMock()
+
+
+@pytest.fixture
+def app(mock_ingestion_service, mock_storage_service, mock_base_analysis_service):
     """Create a test FastAPI app with mocked dependencies."""
     test_app = create_app()
     test_app.dependency_overrides[_get_ingestion_service] = lambda: mock_ingestion_service
     test_app.dependency_overrides[_get_storage_service] = lambda: mock_storage_service
+    test_app.dependency_overrides[_get_base_analysis_service] = lambda: mock_base_analysis_service
     return test_app
 
 

@@ -1,11 +1,16 @@
 """Document upload, status, and IR retrieval endpoints."""
 
-from fastapi import APIRouter, Depends, UploadFile
+import logging
+
+from fastapi import APIRouter, BackgroundTasks, Depends, UploadFile
 from fastapi.responses import JSONResponse
 
+from app.analysis.base_analysis.service import BaseAnalysisService
 from app.ingestion.service import IngestionService
 from app.ingestion.storage import StorageService
 from app.models.document import DocumentStatus, IntermediateRepresentation
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -29,6 +34,14 @@ def _get_storage_service() -> StorageService:
     at startup with the real configured instance.
     """
     raise NotImplementedError("StorageService dependency not configured")
+
+
+def _get_base_analysis_service() -> BaseAnalysisService:
+    """Dependency placeholder for the BaseAnalysisService.
+
+    Overridden by app factory dependency_overrides at startup.
+    """
+    raise NotImplementedError("BaseAnalysisService dependency not configured")
 
 
 # --- Size limits (bytes) for reference in error responses ---
@@ -96,7 +109,10 @@ def _build_error_response(error_code: str, message: str) -> dict:
 )
 async def upload_document(
     file: UploadFile,
+    background_tasks: BackgroundTasks,
     ingestion_service: IngestionService = Depends(_get_ingestion_service),
+    storage_service: StorageService = Depends(_get_storage_service),
+    base_analysis_service: BaseAnalysisService = Depends(_get_base_analysis_service),
 ):
     """Upload a document for ingestion.
 
@@ -104,6 +120,10 @@ async def upload_document(
     Returns 202 on success with the document status.
     Returns 400 for validation errors.
     Returns 422 for extraction failures.
+
+    On successful ingestion, automatically triggers base analysis as a
+    background task. The upload response returns immediately without waiting
+    for analysis to complete. Analysis failure does not affect document status.
     """
     file_bytes = await file.read()
     filename = file.filename or "unnamed"
@@ -126,7 +146,45 @@ async def upload_document(
         else:
             return JSONResponse(status_code=422, content=body)
 
+    # Trigger base analysis as a background task (fire-and-forget).
+    # Analysis failure does not affect the document's ingestion status.
+    background_tasks.add_task(
+        _run_base_analysis,
+        document_id=result.document_id,
+        storage_service=storage_service,
+        base_analysis_service=base_analysis_service,
+    )
+
     return result
+
+
+async def _run_base_analysis(
+    document_id: str,
+    storage_service: StorageService,
+    base_analysis_service: BaseAnalysisService,
+) -> None:
+    """Execute base analysis in the background.
+
+    Retrieves the IR from storage and runs the analysis service.
+    All exceptions are caught and logged — analysis failure must never
+    propagate or affect the document's ingestion status.
+    """
+    try:
+        ir = await storage_service.get_ir(document_id)
+        if ir is None:
+            logger.warning(
+                "Cannot run base analysis for document '%s': IR not available",
+                document_id,
+            )
+            return
+        await base_analysis_service.analyze(document_id, ir)
+    except Exception as exc:
+        logger.error(
+            "Base analysis background task failed for document '%s': %s",
+            document_id,
+            str(exc),
+            exc_info=True,
+        )
 
 
 @router.get(

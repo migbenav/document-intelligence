@@ -6,19 +6,19 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
 
 ## Tasks
 
-- [ ] 1. Define document card data models and database migration
-  - [ ] 1.1 Create DocumentCard Pydantic models
+- [x] 1. Define document card data models and database migration
+  - [x] 1.1 Create DocumentCard Pydantic models
     - Create `src/backend/app/models/document_card.py` with: `OrganizationType` enum (numbered_articles, headed_sections, hierarchical_numbering, free_form), `DocumentClassification` enum (normative, guide, manual, procedure, technical, narrative, other), `DocumentCardStatistics` model (total_chunks, sections_detected, hierarchy_levels, has_existing_index), `FileMetadata` model (size_bytes, format, language, last_modified), `DocumentCard` model (id, document_id, title, summary, classification, organization_type, statistics, file_metadata, status, outdated, model_id, prompt_version, created_at, updated_at)
     - `status` is Literal["completed", "failed_llm", "partial"]
     - `summary` and `classification` are nullable (null when status=partial)
     - `outdated: bool = False` for change detection
     - _Requirements: Req 4 (criteria 1, 2), Req 6 (criterion 1)_
 
-  - [ ] 1.2 Create database migration
+  - [x] 1.2 Create database migration
     - Create SQL migration for `document_cards` table with: UUID primary key, UNIQUE constraint on document_id (FK to documents), JSONB columns for statistics and file_metadata, outdated BOOLEAN DEFAULT false, index on document_id
     - _Requirements: Req 4 (criterion 1)_
 
-  - [ ] 1.3 Write unit tests for card models
+  - [x] 1.3 Write unit tests for card models
     - Create `src/backend/tests/unit/analysis/base_analysis/test_card_models.py`
     - Test Pydantic v2 serialization/deserialization round-trips
     - Test enum values match design specification
@@ -26,8 +26,8 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - Test outdated default is False
     - _Requirements: Req 4 (criterion 2)_
 
-- [ ] 2. Implement LocalAnalyzer
-  - [ ] 2.1 Create LocalAnalyzer module
+- [x] 2. Implement LocalAnalyzer
+  - [x] 2.1 Create LocalAnalyzer module
     - Create `src/backend/app/analysis/base_analysis/__init__.py`
     - Create `src/backend/app/analysis/base_analysis/local_analyzer.py`
     - Implement `LocalAnalyzer` class with `analyze(ir) -> LocalAnalysisResult`
@@ -39,7 +39,7 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - No network calls, no LLM calls, no external service calls
     - _Requirements: Req 2 (criteria 1-7)_
 
-  - [ ] 2.2 Write unit tests for LocalAnalyzer
+  - [x] 2.2 Write unit tests for LocalAnalyzer
     - Create `src/backend/tests/unit/analysis/base_analysis/test_local_analyzer.py`
     - Test title extraction: from first heading, from filename fallback
     - Test statistics: chunk count, section count, hierarchy levels, default level
@@ -50,8 +50,8 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - All tests use synthetic IntermediateRepresentation objects
     - _Requirements: Req 2 (criteria 1-7)_
 
-- [ ] 3. Implement LLMAnalyzer
-  - [ ] 3.1 Create LLMAnalyzer module and prompt template
+- [x] 3. Implement LLMAnalyzer
+  - [x] 3.1 Create LLMAnalyzer module and prompt template
     - Create `src/backend/app/analysis/base_analysis/llm_analyzer.py`
     - Implement `LLMAnalyzer` class with `__init__(self, llm_client: LLMClient)`
     - Implement `async analyze(title, chunks, organization_type) -> LLMAnalysisResult | None`
@@ -64,7 +64,7 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - Prompt instructs: respond with JSON only, summary of 2-3 lines, classification from fixed set
     - _Requirements: Req 3 (criteria 1-7)_
 
-  - [ ] 3.2 Write unit tests for LLMAnalyzer
+  - [x] 3.2 Write unit tests for LLMAnalyzer
     - Create `src/backend/tests/unit/analysis/base_analysis/test_llm_analyzer.py`
     - Test successful call: valid JSON response → LLMAnalysisResult
     - Test timeout: asyncio.TimeoutError → returns None
@@ -77,8 +77,8 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - All tests mock LLMClient
     - _Requirements: Req 3 (criteria 1-7)_
 
-- [ ] 4. Implement BaseAnalysisStorage
-  - [ ] 4.1 Create BaseAnalysisStorage module
+- [x] 4. Implement BaseAnalysisStorage
+  - [x] 4.1 Create BaseAnalysisStorage module
     - Create `src/backend/app/analysis/base_analysis/storage.py`
     - Implement `BaseAnalysisStorage` class with `__init__(self, supabase_client)`
     - `async get_card(document_id) -> DocumentCard | None`: query document_cards by document_id
@@ -86,7 +86,7 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - `async mark_outdated(document_id) -> None`: set outdated=True on existing card
     - _Requirements: Req 4 (criteria 1, 3, 4), Req 6 (criteria 1, 3)_
 
-  - [ ] 4.2 Write unit tests for BaseAnalysisStorage
+  - [x] 4.2 Write unit tests for BaseAnalysisStorage
     - Create `src/backend/tests/unit/analysis/base_analysis/test_storage.py`
     - Test get_card: existing card, non-existing card
     - Test upsert_card: insert new, update existing
@@ -95,8 +95,8 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - All tests mock Supabase client
     - _Requirements: Req 4 (criteria 1, 3), Req 6 (criterion 1)_
 
-- [ ] 5. Implement BaseAnalysisService orchestrator
-  - [ ] 5.1 Create BaseAnalysisService module
+- [x] 5. Implement BaseAnalysisService orchestrator
+  - [x] 5.1 Create BaseAnalysisService module
     - Create `src/backend/app/analysis/base_analysis/service.py`
     - Implement `BaseAnalysisService` with `__init__(local_analyzer, llm_analyzer, storage)`
     - `async analyze(document_id, ir) -> DocumentCard`: check existing card (idempotency by status + size_bytes), run local → run LLM → build card → upsert
@@ -107,7 +107,7 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - Raise `CardNotFoundError` if no card exists for retry
     - _Requirements: Req 1 (criteria 3, 4), Req 4 (criterion 4), Req 5 (criteria 1, 2, 3)_
 
-  - [ ] 5.2 Write unit tests for BaseAnalysisService
+  - [x] 5.2 Write unit tests for BaseAnalysisService
     - Create `src/backend/tests/unit/analysis/base_analysis/test_service.py`
     - Test analyze: successful (completed card)
     - Test analyze: LLM fails (partial card saved)
@@ -119,8 +119,8 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - All tests mock LocalAnalyzer, LLMAnalyzer, BaseAnalysisStorage
     - _Requirements: Req 1 (criteria 3, 4), Req 5 (criteria 1, 2, 3)_
 
-- [ ] 6. Implement API endpoints
-  - [ ] 6.1 Create card API router
+- [x] 6. Implement API endpoints
+  - [x] 6.1 Create card API router
     - Create `src/backend/app/api/v1/card.py`
     - `GET /api/v1/documents/{document_id}/card`: return 200 with DocumentCard, or 404 (card_not_found vs document_not_found)
     - `POST /api/v1/documents/{document_id}/card/retry-llm`: return 200 (updated card), 404 (card_not_found), or 409 (card_already_complete)
@@ -128,7 +128,7 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - Register router in application
     - _Requirements: Req 7 (criteria 1-6)_
 
-  - [ ] 6.2 Write integration tests for API endpoints
+  - [x] 6.2 Write integration tests for API endpoints
     - Create `src/backend/tests/integration/analysis/test_base_analysis_flow.py`
     - Test GET /card with existing completed card → 200
     - Test GET /card with no card → 404 (card_not_found)
@@ -139,46 +139,46 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - Tests use httpx TestClient with mocked dependencies
     - _Requirements: Req 7 (criteria 1-6)_
 
-- [ ] 7. Integrate with ingestion pipeline
-  - [ ] 7.1 Add BackgroundTask trigger
+- [x] 7. Integrate with ingestion pipeline
+  - [x] 7.1 Add BackgroundTask trigger
     - Modify upload endpoint (in `src/backend/app/api/v1/documents.py` or equivalent) to add `background_tasks.add_task(base_analysis_service.analyze, document_id, ir)` after successful ingestion (status=ready)
     - Wire/instantiate BaseAnalysisService with all dependencies (LocalAnalyzer, LLMAnalyzer, BaseAnalysisStorage)
     - Ensure upload response returns immediately without waiting for analysis
     - Ensure analysis failure does not affect document status
     - _Requirements: Req 1 (criteria 1, 2, 4)_
 
-  - [ ] 7.2 Write end-to-end integration test
+  - [x] 7.2 Write end-to-end integration test
     - Test full flow: upload document → ingestion → background analysis → GET /card returns completed card
     - Test with mocked LLM failure: upload → GET /card returns partial card
     - _Requirements: Req 1 (criteria 1, 2), Req 5 (criterion 4)_
 
-- [ ] 8. Implement frontend store and API client
-  - [ ] 8.1 Create TypeScript interfaces
+- [x] 8. Implement frontend store and API client
+  - [x] 8.1 Create TypeScript interfaces
     - Create `src/frontend/src/types/documentCard.ts`
     - Interface `DocumentCard` with all fields in camelCase, including `outdated: boolean`
     - _Requirements: Req 8 (criterion 2)_
 
-  - [ ] 8.2 Create API client functions
+  - [x] 8.2 Create API client functions
     - Create `src/frontend/src/api/documentCard.ts`
     - `fetchCard(documentId: string): Promise<DocumentCard>` — calls GET /card
     - `retryLlm(documentId: string): Promise<DocumentCard>` — calls POST /retry-llm
     - Handle error responses (404, 409) with typed errors
     - _Requirements: Req 7 (criteria 1, 4), Req 8 (criteria 1, 4)_
 
-  - [ ] 8.3 Create Zustand store
+  - [x] 8.3 Create Zustand store
     - Create `src/frontend/src/store/documentCardStore.ts`
     - State: `card: DocumentCard | null`, `loading: boolean`, `error: string | null`
     - Actions: `fetchCard(documentId)`, `retryLlm(documentId)`, `reset()`
     - _Requirements: Req 8 (criteria 1, 4)_
 
-- [ ] 9. Implement frontend card components
-  - [ ] 9.1 Create DocumentCardSkeleton
+- [x] 9. Implement frontend card components
+  - [x] 9.1 Create DocumentCardSkeleton
     - Create `src/frontend/src/components/document-card/DocumentCardSkeleton.tsx`
     - Loading state using shadcn/ui Skeleton component
     - ARIA live region to announce loading state to screen readers
     - _Requirements: Req 8 (criteria 1, 7)_
 
-  - [ ] 9.2 Create DocumentCardView
+  - [x] 9.2 Create DocumentCardView
     - Create `src/frontend/src/components/document-card/DocumentCardView.tsx`
     - Display completed card: title (prominent), summary, classification badge, organization type, statistics, file metadata
     - Display partial card: local fields + "Reintentar análisis" button (no placeholder text for missing fields)
@@ -187,8 +187,8 @@ Implement the Base Analysis feature (C2) that automatically produces a "document
     - Accessible: keyboard navigable, WCAG 2.1 AA contrast on badges (4.5:1 text)
     - _Requirements: Req 8 (criteria 2, 3, 6, 7)_
 
-- [ ] 10. Integrate card into post-upload flow
-  - [ ] 10.1 Implement polling and integration
+- [x] 10. Integrate card into post-upload flow
+  - [x] 10.1 Implement polling and integration
     - Connect DocumentCardView to upload flow (App.tsx or layout component)
     - After upload success: show DocumentCardSkeleton, start polling fetchCard every 1.5s (max 10 attempts, 15s total)
     - On card received: display DocumentCardView

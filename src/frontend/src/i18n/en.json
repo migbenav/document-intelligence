@@ -93,6 +93,10 @@
       "noElements": "No elements"
     }
   },
+  "card": {
+    "pollExhausted": "The analysis is taking longer than expected. You can try fetching the card manually.",
+    "manualRetry": "Fetch card"
+  },
   "query": {
     "evidence": {
       "verified": "Verified",

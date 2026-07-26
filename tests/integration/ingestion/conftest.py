@@ -5,12 +5,17 @@ pipeline can be tested without Supabase credentials.
 """
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import AsyncMock
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 
-from app.api.v1.documents import _get_ingestion_service, _get_storage_service
+from app.api.v1.documents import (
+    _get_base_analysis_service,
+    _get_ingestion_service,
+    _get_storage_service,
+)
 from app.ingestion.adapters.markdown_adapter import MarkdownAdapter
 from app.ingestion.adapters.pdf_adapter import PdfAdapter
 from app.ingestion.adapters.plaintext_adapter import PlainTextAdapter
@@ -174,8 +179,13 @@ def app(fake_storage):
         storage_service=fake_storage,
     )
 
+    mock_base_analysis_service = AsyncMock()
+
     application.dependency_overrides[_get_ingestion_service] = lambda: ingestion_service
     application.dependency_overrides[_get_storage_service] = lambda: fake_storage
+    application.dependency_overrides[_get_base_analysis_service] = (
+        lambda: mock_base_analysis_service
+    )
 
     return application
 

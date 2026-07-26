@@ -7,7 +7,14 @@ from app.api.v1.analysis import (
     _get_analysis_service,
     router as analysis_router,
 )
+from app.api.v1.card import (
+    _get_base_analysis_service,
+    _get_base_analysis_storage,
+    _get_storage_service as _get_card_storage_service,
+    router as card_router,
+)
 from app.api.v1.documents import (
+    _get_base_analysis_service as _get_documents_base_analysis_service,
     _get_ingestion_service,
     _get_storage_service,
     router as documents_router,
@@ -22,6 +29,10 @@ from app.api.v1.query import (
     _get_query_service,
     router as query_router,
 )
+from app.analysis.base_analysis.llm_analyzer import LLMAnalyzer
+from app.analysis.base_analysis.local_analyzer import LocalAnalyzer
+from app.analysis.base_analysis.service import BaseAnalysisService
+from app.analysis.base_analysis.storage import BaseAnalysisStorage
 from app.analysis.extraction import ExtractionService
 from app.analysis.llm_client import LLMClient
 from app.analysis.quality.ambiguity_detector import AmbiguityDetector
@@ -147,10 +158,33 @@ def create_app(
         app.dependency_overrides[_get_query_service] = lambda: query_service
         app.dependency_overrides[_get_query_analysis_service] = lambda: analysis_service
 
+        # Base analysis service dependencies
+        local_analyzer = LocalAnalyzer()
+        llm_analyzer = LLMAnalyzer(llm_client=llm_client)
+        base_analysis_storage = BaseAnalysisStorage(supabase_client)
+
+        base_analysis_service = BaseAnalysisService(
+            local_analyzer=local_analyzer,
+            llm_analyzer=llm_analyzer,
+            storage=base_analysis_storage,
+        )
+
+        app.dependency_overrides[_get_base_analysis_service] = (
+            lambda: base_analysis_service
+        )
+        app.dependency_overrides[_get_base_analysis_storage] = (
+            lambda: base_analysis_storage
+        )
+        app.dependency_overrides[_get_card_storage_service] = lambda: storage_service
+        app.dependency_overrides[_get_documents_base_analysis_service] = (
+            lambda: base_analysis_service
+        )
+
     # --- Router registration ---
     app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
     app.include_router(analysis_router, prefix="/api/v1/documents", tags=["analysis"])
     app.include_router(quality_router, prefix="/api/v1/documents", tags=["quality"])
     app.include_router(query_router, prefix="/api/v1/documents", tags=["query"])
+    app.include_router(card_router, prefix="/api/v1/documents", tags=["card"])
 
     return app
