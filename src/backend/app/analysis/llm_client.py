@@ -15,9 +15,9 @@ from typing import Literal
 logger = logging.getLogger(__name__)
 
 # Default model configuration (Decision 1 from design.md)
-DEFAULT_PRIMARY_MODEL = "gemini/gemini-2.5-flash-preview-05-20"
-DEFAULT_LIGHT_MODEL = "groq/llama-3.3-70b-versatile"
-DEFAULT_FALLBACK_MODEL = "groq/llama-3.3-70b-versatile"
+DEFAULT_PRIMARY_MODEL = "gemini/gemini-2.5-flash"
+DEFAULT_LIGHT_MODEL = "gemini/gemini-2.5-flash"
+DEFAULT_FALLBACK_MODEL = "gemini/gemini-2.5-flash"
 
 
 class ConfigurationError(Exception):
@@ -79,8 +79,6 @@ class LLMClient:
             missing_keys.append("GEMINI_API_KEY")
 
         self._groq_api_key = os.environ.get("GROQ_API_KEY")
-        if not self._groq_api_key:
-            missing_keys.append("GROQ_API_KEY")
 
         if missing_keys:
             raise ConfigurationError(
@@ -103,7 +101,8 @@ class LLMClient:
             )
 
             litellm.gemini_key = self._gemini_api_key
-            litellm.groq_key = self._groq_api_key
+            if self._groq_api_key:
+                litellm.groq_key = self._groq_api_key
 
             self._transient_error_types = (RateLimitError, Timeout, ServiceUnavailableError)
             self._auth_error_type = AuthenticationError

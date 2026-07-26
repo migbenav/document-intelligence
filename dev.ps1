@@ -1,5 +1,5 @@
 # dev.ps1 - Start backend and frontend simultaneously
-# Usage: .\dev.ps1
+# Usage: .\dev.ps1  (from project root)
 # Press Ctrl+C to stop both processes
 
 Write-Host "Starting Document Intelligence..." -ForegroundColor Cyan
@@ -11,10 +11,10 @@ $backend = Start-Process -NoNewWindow -PassThru -FilePath "python" `
     -ArgumentList "-m", "uvicorn", "app.run:app", "--reload", "--port", "8000" `
     -WorkingDirectory "$PSScriptRoot\src\backend"
 
-# Start frontend
+# Start frontend (npm is a .cmd on Windows, must invoke via cmd)
 Write-Host "[Frontend] Starting on http://localhost:5173" -ForegroundColor Green
-$frontend = Start-Process -NoNewWindow -PassThru -FilePath "npm" `
-    -ArgumentList "run", "dev" `
+$frontend = Start-Process -NoNewWindow -PassThru -FilePath "cmd.exe" `
+    -ArgumentList "/c", "npm run dev" `
     -WorkingDirectory "$PSScriptRoot\src\frontend"
 
 Write-Host ""
@@ -23,7 +23,6 @@ Write-Host ""
 
 # Wait and handle shutdown
 try {
-    # Keep script alive until interrupted
     while ($true) {
         if ($backend.HasExited -or $frontend.HasExited) {
             Write-Host "A process exited unexpectedly. Shutting down..." -ForegroundColor Red

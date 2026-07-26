@@ -24,6 +24,20 @@ _DEFAULT_RETENTION_SECONDS = 86400
 
 STORAGE_BUCKET = "documents"
 
+# MIME type mapping for supported document formats
+_MIME_TYPES = {
+    ".pdf": "application/pdf",
+    ".md": "text/markdown",
+    ".markdown": "text/markdown",
+    ".txt": "text/plain",
+}
+
+
+def _get_content_type(filename: str) -> str:
+    """Determine the MIME content-type from a filename extension."""
+    ext = os.path.splitext(filename)[1].lower()
+    return _MIME_TYPES.get(ext, "application/octet-stream")
+
 
 def _get_retention_seconds() -> int:
     """Read retention duration from environment variable."""
@@ -101,10 +115,13 @@ class StorageService:
         safe_name = sanitize_filename(filename)
         path = f"{document_id}/original/{safe_name}"
 
+        # Determine content-type from filename extension
+        content_type = _get_content_type(filename)
+
         self._client.storage.from_(STORAGE_BUCKET).upload(
             path=path,
             file=file_bytes,
-            file_options={"content-type": "application/octet-stream"},
+            file_options={"content-type": content_type},
         )
 
     async def create_document_record(
