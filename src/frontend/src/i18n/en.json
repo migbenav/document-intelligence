@@ -97,6 +97,38 @@
     "pollExhausted": "The analysis is taking longer than expected. You can try fetching the card manually.",
     "manualRetry": "Fetch card"
   },
+  "sidebar": {
+    "title": "Preferences",
+    "collapse": "Collapse panel",
+    "expand": "Expand panel",
+    "preferences": {
+      "title": "User Preferences"
+    },
+    "language": {
+      "label": "Language",
+      "options": {
+        "es": "Español",
+        "en": "English"
+      }
+    },
+    "model": {
+      "label": "LLM Model",
+      "options": {
+        "default": "Automatic (recommended)",
+        "defaultDesc": "Uses the optimal model for each task",
+        "gemini": "Gemini 2.5 Flash",
+        "geminiDesc": "Primary — deep analysis",
+        "groq": "Groq Llama 3.3 70B",
+        "groqDesc": "Fast — base analysis"
+      }
+    },
+    "fallback": {
+      "label": "Auto-fallback",
+      "description": "If the selected model fails, automatically retry with an alternate model",
+      "enabled": "Enabled",
+      "disabled": "Disabled"
+    }
+  },
   "query": {
     "evidence": {
       "verified": "Verified",

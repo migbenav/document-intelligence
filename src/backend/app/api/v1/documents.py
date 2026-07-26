@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.analysis.base_analysis.service import BaseAnalysisService
 from app.ingestion.service import IngestionService
 from app.ingestion.storage import StorageService
+from app.middleware.preferences import RequestPreferences, get_request_preferences
 from app.models.document import DocumentStatus, IntermediateRepresentation
 
 logger = logging.getLogger(__name__)
@@ -113,6 +114,7 @@ async def upload_document(
     ingestion_service: IngestionService = Depends(_get_ingestion_service),
     storage_service: StorageService = Depends(_get_storage_service),
     base_analysis_service: BaseAnalysisService = Depends(_get_base_analysis_service),
+    prefs: RequestPreferences = Depends(get_request_preferences),
 ):
     """Upload a document for ingestion.
 
@@ -153,6 +155,9 @@ async def upload_document(
         document_id=result.document_id,
         storage_service=storage_service,
         base_analysis_service=base_analysis_service,
+        language=prefs.language,
+        model_override=prefs.model_override,
+        auto_fallback=prefs.auto_fallback,
     )
 
     return result
@@ -162,6 +167,9 @@ async def _run_base_analysis(
     document_id: str,
     storage_service: StorageService,
     base_analysis_service: BaseAnalysisService,
+    language: str = "es",
+    model_override: str | None = None,
+    auto_fallback: bool = True,
 ) -> None:
     """Execute base analysis in the background.
 
@@ -177,7 +185,13 @@ async def _run_base_analysis(
                 document_id,
             )
             return
-        await base_analysis_service.analyze(document_id, ir)
+        await base_analysis_service.analyze(
+            document_id,
+            ir,
+            language=language,
+            model_override=model_override,
+            auto_fallback=auto_fallback,
+        )
     except Exception as exc:
         logger.error(
             "Base analysis background task failed for document '%s': %s",

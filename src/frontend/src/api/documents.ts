@@ -1,4 +1,4 @@
-import { API_BASE_URL, UPLOAD_TIMEOUT_MS, SLOW_CONNECTION_THRESHOLD_MS } from './client';
+import { API_BASE_URL, UPLOAD_TIMEOUT_MS, SLOW_CONNECTION_THRESHOLD_MS, apiFetch, getPreferenceHeaders } from './client';
 import type { UploadResponse, StatusResponse, ApiErrorResponse } from '@/types/api';
 
 /**
@@ -43,6 +43,12 @@ export function uploadDocument(
 
     xhr.open('POST', url);
     xhr.timeout = UPLOAD_TIMEOUT_MS;
+
+    // Inject preference headers
+    const prefHeaders = getPreferenceHeaders();
+    for (const [key, value] of Object.entries(prefHeaders)) {
+      xhr.setRequestHeader(key, value);
+    }
 
     // Slow connection detection
     let slowTimer: ReturnType<typeof setTimeout> | undefined;
@@ -140,7 +146,7 @@ export async function getDocumentStatus(
   };
 
   try {
-    const response = await fetch(url, { signal });
+    const response = await apiFetch(url, { signal });
     clearSlowTimer();
 
     if (!response.ok) {

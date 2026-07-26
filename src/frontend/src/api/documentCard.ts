@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './client';
+import { API_BASE_URL, apiFetch } from './client';
 import type { DocumentCard } from '@/types/documentCard';
 
 /**
@@ -22,7 +22,7 @@ export class CardApiError extends Error {
  */
 export async function fetchCard(documentId: string): Promise<DocumentCard> {
   const url = `${API_BASE_URL}/api/v1/documents/${documentId}/card`;
-  const response = await fetch(url);
+  const response = await apiFetch(url);
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);
@@ -41,7 +41,7 @@ export async function fetchCard(documentId: string): Promise<DocumentCard> {
  */
 export async function retryLlm(documentId: string): Promise<DocumentCard> {
   const url = `${API_BASE_URL}/api/v1/documents/${documentId}/card/retry-llm`;
-  const response = await fetch(url, { method: 'POST' });
+  const response = await apiFetch(url, { method: 'POST' });
 
   if (!response.ok) {
     const body = await response.json().catch(() => null);

@@ -97,6 +97,38 @@
     "pollExhausted": "El análisis está tardando más de lo esperado. Puedes intentar obtener la ficha manualmente.",
     "manualRetry": "Obtener ficha"
   },
+  "sidebar": {
+    "title": "Preferencias",
+    "collapse": "Contraer panel",
+    "expand": "Expandir panel",
+    "preferences": {
+      "title": "Preferencias de Usuario"
+    },
+    "language": {
+      "label": "Idioma",
+      "options": {
+        "es": "Español",
+        "en": "English"
+      }
+    },
+    "model": {
+      "label": "Modelo LLM",
+      "options": {
+        "default": "Automático (recomendado)",
+        "defaultDesc": "Usa el modelo óptimo para cada tarea",
+        "gemini": "Gemini 2.5 Flash",
+        "geminiDesc": "Principal — análisis profundo",
+        "groq": "Groq Llama 3.3 70B",
+        "groqDesc": "Rápido — análisis base"
+      }
+    },
+    "fallback": {
+      "label": "Auto-fallback",
+      "description": "Si el modelo seleccionado falla, reintenta con un modelo alternativo automáticamente",
+      "enabled": "Activado",
+      "disabled": "Desactivado"
+    }
+  },
   "query": {
     "evidence": {
       "verified": "Verificado",

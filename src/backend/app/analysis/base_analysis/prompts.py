@@ -11,6 +11,7 @@ document_id is sent to the LLM.
 PROMPT_VERSION = "base-analysis-v1"
 
 PROMPT_TEMPLATE = """\
+Respond in {response_language}.
 You are a document analysis assistant. Analyze the following document excerpt and respond with JSON only.
 
 Document title: {title}

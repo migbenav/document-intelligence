@@ -19,6 +19,12 @@ from app.models.quality_analysis import MissingElement
 
 logger = logging.getLogger(__name__)
 
+# ISO language code to full language name mapping
+LANGUAGE_MAP: dict[str, str] = {
+    "es": "Spanish",
+    "en": "English",
+}
+
 
 class CompletenessEvaluationError(Exception):
     """Raised when completeness evaluation cannot proceed."""
@@ -46,6 +52,7 @@ class CompletenessEvaluator:
         self,
         knowledge_model: KnowledgeModel,
         document_type: str,
+        language: str = "es",
     ) -> list[MissingElement]:
         """Compare KM elements against the document type schema.
 
@@ -59,6 +66,7 @@ class CompletenessEvaluator:
         Args:
             knowledge_model: The completed Knowledge Model to evaluate.
             document_type: The confirmed document type.
+            language: ISO language code ('es' or 'en'). Defaults to 'es'.
 
         Returns:
             List of MissingElement findings for missing and partial elements.
@@ -106,7 +114,7 @@ class CompletenessEvaluator:
         # Step 2 (LLM): Assess partial coverage for present elements
         if present_elements:
             partial_findings = await self._assess_partial_coverage(
-                knowledge_model, present_elements, schema, document_type
+                knowledge_model, present_elements, schema, document_type, language
             )
             findings.extend(partial_findings)
 
@@ -164,6 +172,7 @@ class CompletenessEvaluator:
         present_elements: list[dict[str, str]],
         schema: list[dict[str, str]],
         document_type: str,
+        language: str = "es",
     ) -> list[MissingElement]:
         """Use LLM to assess whether present elements have full or partial coverage.
 
@@ -172,6 +181,7 @@ class CompletenessEvaluator:
             present_elements: Schema entries that have matching KM elements.
             schema: The full schema for context.
             document_type: The document type for schema_reference.
+            language: ISO language code ('es' or 'en'). Defaults to 'es'.
 
         Returns:
             List of MissingElement findings for partially covered elements.
@@ -197,7 +207,8 @@ class CompletenessEvaluator:
         schema_json = json.dumps(schema, ensure_ascii=False, indent=2)
 
         # Build and call the LLM prompt
-        prompt = completeness_evaluation_v1.build(elements_json, schema_json)
+        response_language = LANGUAGE_MAP.get(language, "Spanish")
+        prompt = completeness_evaluation_v1.build(elements_json, schema_json, response_language)
         response = await self._llm_client.call(prompt, model_tier="primary", temperature=0.1)
 
         # Parse the LLM response

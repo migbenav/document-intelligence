@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './client';
+import { API_BASE_URL, apiFetch } from './client';
 import type { KnowledgeModelResponse } from '@/types/knowledgeModel';
 
 /** 30s timeout for cold-start tolerance */
@@ -56,7 +56,7 @@ export async function getKnowledgeModel(
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await apiFetch(url, { signal: controller.signal });
 
     if (response.ok) {
       return (await response.json()) as KnowledgeModelResponse;

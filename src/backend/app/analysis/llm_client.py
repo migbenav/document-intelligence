@@ -118,15 +118,18 @@ class LLMClient:
         *,
         model_tier: Literal["primary", "light"] = "primary",
         temperature: float = 0.1,
+        model_override: str | None = None,
+        auto_fallback: bool = True,
     ) -> LLMResponse:
-        """Make an LLM call with automatic fallback on transient errors.
+        """Make an LLM call with optional model override and fallback control.
 
         Routes to the correct model based on model_tier:
         - "primary" -> PRIMARY_MODEL (Gemini)
         - "light" -> LIGHT_MODEL (Groq)
 
         On transient errors (rate limit, timeout, service unavailable),
-        automatically falls back to FALLBACK_MODEL (Req 1.3).
+        automatically falls back to FALLBACK_MODEL (Req 1.3) unless
+        auto_fallback is False.
         On authentication/credential errors, raises immediately without
         fallback attempt (Req 1.3).
 
@@ -134,13 +137,16 @@ class LLMClient:
             prompt: The prompt text to send to the LLM.
             model_tier: Which model tier to use ("primary" or "light").
             temperature: Generation temperature (default 0.1 for reproducibility, Req 1.4).
+            model_override: If provided and != 'default', use this model instead of tier default.
+            auto_fallback: If False, raise immediately on transient error (no fallback attempt).
 
         Returns:
             LLMResponse with the generated content and actual model_id used.
 
         Raises:
             LLMAuthenticationError: On credential errors (no fallback attempted).
-            LLMTransientError: When both primary and fallback fail with transient errors.
+            LLMTransientError: When both primary and fallback fail with transient errors,
+                or when auto_fallback is False and a transient error occurs.
             Exception: On non-transient, non-auth errors (Req 1.7).
         """
         if self._acompletion is None:
@@ -148,8 +154,11 @@ class LLMClient:
                 "litellm is not installed. Install it with: pip install litellm"
             )
 
-        # Determine target model based on tier
-        target_model = self.primary_model if model_tier == "primary" else self.light_model
+        # Determine target model: override takes precedence over tier default
+        if model_override is not None and model_override != "default":
+            target_model = model_override
+        else:
+            target_model = self.primary_model if model_tier == "primary" else self.light_model
 
         # Attempt primary call
         try:
@@ -169,8 +178,22 @@ class LLMClient:
                 )
                 raise LLMAuthenticationError(str(e)) from e
 
-            # Transient errors: attempt fallback (Req 1.3)
+            # Transient errors: attempt fallback only if auto_fallback is True (Req 1.3)
             if self._transient_error_types and isinstance(e, self._transient_error_types):
+                if not auto_fallback:
+                    logger.warning(
+                        "Transient error on model, auto_fallback disabled — raising immediately",
+                        extra={
+                            "model_id": target_model,
+                            "model_tier": model_tier,
+                            "error_type": type(e).__name__,
+                        },
+                    )
+                    raise LLMTransientError(
+                        f"Model {target_model} failed with transient error and auto_fallback is disabled. "
+                        f"Error: {e}"
+                    ) from e
+
                 logger.warning(
                     "Transient error on primary model, attempting fallback",
                     extra={

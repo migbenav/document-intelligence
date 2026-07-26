@@ -83,7 +83,7 @@ provided — do not introduce external expectations.\
 """
 
 
-def build(elements_json: str, schema_json: str) -> str:
+def build(elements_json: str, schema_json: str, response_language: str = "Spanish") -> str:
     """Construct the completeness evaluation prompt from KM elements and schema.
 
     This prompt is used for partial coverage assessment: given elements that
@@ -97,13 +97,17 @@ def build(elements_json: str, schema_json: str) -> str:
         schema_json: JSON string of the document type schema defining expected
             elements and their descriptions. Must be included for the LLM to
             compare coverage against expectations (Req 10.4).
+        response_language: Full language name for the LLM response (e.g.
+            "Spanish", "English"). Defaults to "Spanish".
 
     Returns:
         The complete prompt string ready to send to the LLM.
     """
     instructions = _SYSTEM_INSTRUCTIONS + _JSON_SCHEMA + _SYSTEM_INSTRUCTIONS_FOOTER
 
-    return f"""{instructions}
+    return f"""Respond in {response_language}.
+
+{instructions}
 
 --- DOCUMENT TYPE SCHEMA ---
 {schema_json}

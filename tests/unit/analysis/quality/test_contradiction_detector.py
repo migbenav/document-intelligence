@@ -592,3 +592,62 @@ class TestUnverifiedElementsFlagged:
         llm_results = [r for r in results if not r.from_explicit_relationship]
         assert len(llm_results) == 1
         assert llm_results[0].involves_unverified_elements is True
+
+
+
+# --- Test: Language parameter in prompt ---
+
+
+class TestLanguageParameter:
+    """Test that the language parameter affects the LLM prompt."""
+
+    @pytest.mark.asyncio
+    async def test_default_language_prepends_spanish_instruction(
+        self,
+        mock_llm_client: MagicMock,
+        km_no_contradictions: KnowledgeModel,
+        sample_ir: IntermediateRepresentation,
+    ):
+        """Default language 'es' prepends 'Respond in Spanish.' to the prompt."""
+        mock_llm_client.call.return_value = _make_llm_response([])
+
+        detector = ContradictionDetector(mock_llm_client)
+        await detector.detect(km_no_contradictions, sample_ir)
+
+        call_args = mock_llm_client.call.call_args
+        prompt = call_args[0][0]
+        assert prompt.startswith("Respond in Spanish.\n")
+
+    @pytest.mark.asyncio
+    async def test_english_language_prepends_english_instruction(
+        self,
+        mock_llm_client: MagicMock,
+        km_no_contradictions: KnowledgeModel,
+        sample_ir: IntermediateRepresentation,
+    ):
+        """Language 'en' prepends 'Respond in English.' to the prompt."""
+        mock_llm_client.call.return_value = _make_llm_response([])
+
+        detector = ContradictionDetector(mock_llm_client)
+        await detector.detect(km_no_contradictions, sample_ir, language="en")
+
+        call_args = mock_llm_client.call.call_args
+        prompt = call_args[0][0]
+        assert prompt.startswith("Respond in English.\n")
+
+    @pytest.mark.asyncio
+    async def test_unknown_language_defaults_to_spanish(
+        self,
+        mock_llm_client: MagicMock,
+        km_no_contradictions: KnowledgeModel,
+        sample_ir: IntermediateRepresentation,
+    ):
+        """Unknown language code falls back to 'Spanish'."""
+        mock_llm_client.call.return_value = _make_llm_response([])
+
+        detector = ContradictionDetector(mock_llm_client)
+        await detector.detect(km_no_contradictions, sample_ir, language="fr")
+
+        call_args = mock_llm_client.call.call_args
+        prompt = call_args[0][0]
+        assert prompt.startswith("Respond in Spanish.\n")

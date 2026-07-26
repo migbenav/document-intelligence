@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from app.analysis.query.service import QueryError, QueryService
 from app.analysis.service import AnalysisService
+from app.middleware.preferences import RequestPreferences, get_request_preferences
 from app.models.query import QueryRequest
 
 logger = logging.getLogger(__name__)
@@ -61,6 +62,7 @@ async def query_document(
     body: QueryRequest,
     analysis_service: AnalysisService = Depends(_get_analysis_service),
     query_service: QueryService = Depends(_get_query_service),
+    prefs: RequestPreferences = Depends(get_request_preferences),
 ):
     """Submit a natural language question about a document.
 
@@ -118,6 +120,9 @@ async def query_document(
                 question=body.question,
                 knowledge_model=knowledge_model,
                 ir=ir,
+                language=prefs.language,
+                model_override=prefs.model_override,
+                auto_fallback=prefs.auto_fallback,
             ),
             timeout=_QUERY_TIMEOUT_SECONDS,
         )

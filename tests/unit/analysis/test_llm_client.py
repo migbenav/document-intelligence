@@ -6,8 +6,10 @@ Tests cover:
 - Credential/authentication error skips fallback
 - Missing env vars raise ConfigurationError at init
 - model_id tracking reflects actual model used (Property 9)
+- model_override parameter routes to specified model (Req 3, criterion 3)
+- auto_fallback parameter controls fallback behavior (Req 4, criteria 2-3)
 
-Requirements validated: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7
+Requirements validated: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 3.3, 4.2, 4.3
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -340,3 +342,190 @@ class TestLLMClientAuthErrors:
 
         with pytest.raises(LLMAuthenticationError, match="Invalid API key for gemini"):
             await client.call("prompt", model_tier="primary")
+
+
+# --- Model Override Tests (Req 3, criterion 3) ---
+
+
+class TestLLMClientModelOverride:
+    """Tests for model_override parameter routing behavior."""
+
+    @pytest.mark.asyncio
+    async def test_model_override_routes_to_specified_model(self, client):
+        """model_override routes the call to the specified model instead of tier default."""
+        result = await client.call(
+            "test prompt", model_tier="primary", model_override="groq/llama-3.3-70b-versatile"
+        )
+
+        client._acompletion.assert_called_once_with(
+            model="groq/llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": "test prompt"}],
+            temperature=0.1,
+        )
+        assert result.model_id == "groq/llama-3.3-70b-versatile"
+
+    @pytest.mark.asyncio
+    async def test_model_override_none_uses_tier_default_primary(self, client):
+        """model_override=None uses tier default for primary (existing behavior)."""
+        result = await client.call(
+            "test prompt", model_tier="primary", model_override=None
+        )
+
+        client._acompletion.assert_called_once_with(
+            model=DEFAULT_PRIMARY_MODEL,
+            messages=[{"role": "user", "content": "test prompt"}],
+            temperature=0.1,
+        )
+        assert result.model_id == DEFAULT_PRIMARY_MODEL
+
+    @pytest.mark.asyncio
+    async def test_model_override_none_uses_tier_default_light(self, client):
+        """model_override=None uses tier default for light tier."""
+        result = await client.call(
+            "test prompt", model_tier="light", model_override=None
+        )
+
+        client._acompletion.assert_called_once_with(
+            model=DEFAULT_LIGHT_MODEL,
+            messages=[{"role": "user", "content": "test prompt"}],
+            temperature=0.1,
+        )
+        assert result.model_id == DEFAULT_LIGHT_MODEL
+
+    @pytest.mark.asyncio
+    async def test_model_override_default_string_uses_tier_default(self, client):
+        """model_override='default' uses tier default (same as None)."""
+        result = await client.call(
+            "test prompt", model_tier="primary", model_override="default"
+        )
+
+        client._acompletion.assert_called_once_with(
+            model=DEFAULT_PRIMARY_MODEL,
+            messages=[{"role": "user", "content": "test prompt"}],
+            temperature=0.1,
+        )
+        assert result.model_id == DEFAULT_PRIMARY_MODEL
+
+    @pytest.mark.asyncio
+    async def test_model_override_ignores_model_tier(self, client):
+        """When model_override is set, model_tier is effectively ignored for routing."""
+        result = await client.call(
+            "test prompt",
+            model_tier="light",
+            model_override="gemini/gemini-2.5-flash",
+        )
+
+        client._acompletion.assert_called_once_with(
+            model="gemini/gemini-2.5-flash",
+            messages=[{"role": "user", "content": "test prompt"}],
+            temperature=0.1,
+        )
+        assert result.model_id == "gemini/gemini-2.5-flash"
+
+    @pytest.mark.asyncio
+    async def test_model_override_model_id_in_response(self, client):
+        """Response model_id reflects the overridden model, not the tier default."""
+        result = await client.call(
+            "prompt", model_override="custom/my-model"
+        )
+
+        assert result.model_id == "custom/my-model"
+        assert result.model_id != DEFAULT_PRIMARY_MODEL
+
+
+# --- Auto-Fallback Control Tests (Req 4, criteria 2-3) ---
+
+
+class TestLLMClientAutoFallback:
+    """Tests for auto_fallback parameter behavior."""
+
+    @pytest.mark.asyncio
+    async def test_auto_fallback_false_raises_on_transient_error(self, client):
+        """auto_fallback=False raises LLMTransientError immediately without retry."""
+        client._acompletion.side_effect = FakeRateLimitError("Rate limited")
+
+        with pytest.raises(LLMTransientError, match="auto_fallback is disabled"):
+            await client.call("prompt", model_tier="primary", auto_fallback=False)
+
+        # Should only call once — no fallback attempt
+        client._acompletion.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_auto_fallback_false_no_retry_on_timeout(self, client):
+        """auto_fallback=False raises immediately on Timeout without retry."""
+        client._acompletion.side_effect = FakeTimeout("Timed out")
+
+        with pytest.raises(LLMTransientError, match="auto_fallback is disabled"):
+            await client.call("prompt", model_tier="light", auto_fallback=False)
+
+        client._acompletion.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_auto_fallback_false_no_retry_on_service_unavailable(self, client):
+        """auto_fallback=False raises immediately on ServiceUnavailableError."""
+        client._acompletion.side_effect = FakeServiceUnavailableError("Service down")
+
+        with pytest.raises(LLMTransientError, match="auto_fallback is disabled"):
+            await client.call("prompt", auto_fallback=False)
+
+        client._acompletion.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_auto_fallback_true_retries_on_transient_error(self, client):
+        """auto_fallback=True retries with fallback model on transient error (existing behavior)."""
+        fallback_response = _make_mock_response("fallback response")
+        client._acompletion.side_effect = [
+            FakeRateLimitError("Rate limited"),
+            fallback_response,
+        ]
+
+        result = await client.call("prompt", model_tier="primary", auto_fallback=True)
+
+        assert result.content == "fallback response"
+        assert result.model_id == DEFAULT_FALLBACK_MODEL
+        assert client._acompletion.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_auto_fallback_default_is_true(self, client):
+        """auto_fallback defaults to True, preserving existing fallback behavior."""
+        fallback_response = _make_mock_response("fallback response")
+        client._acompletion.side_effect = [
+            FakeRateLimitError("Rate limited"),
+            fallback_response,
+        ]
+
+        # Call without specifying auto_fallback — should default to True
+        result = await client.call("prompt", model_tier="primary")
+
+        assert result.content == "fallback response"
+        assert result.model_id == DEFAULT_FALLBACK_MODEL
+        assert client._acompletion.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_auto_fallback_false_with_model_override(self, client):
+        """auto_fallback=False works with model_override — raises immediately."""
+        client._acompletion.side_effect = FakeRateLimitError("Rate limited")
+
+        with pytest.raises(LLMTransientError, match="auto_fallback is disabled"):
+            await client.call(
+                "prompt",
+                model_override="groq/llama-3.3-70b-versatile",
+                auto_fallback=False,
+            )
+
+        # Verify only one call was made to the overridden model
+        client._acompletion.assert_called_once_with(
+            model="groq/llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": "prompt"}],
+            temperature=0.1,
+        )
+
+    @pytest.mark.asyncio
+    async def test_auto_fallback_false_auth_error_still_raises_auth(self, client):
+        """auto_fallback=False does not change auth error behavior — still raises LLMAuthenticationError."""
+        client._acompletion.side_effect = FakeAuthenticationError("Bad key")
+
+        with pytest.raises(LLMAuthenticationError):
+            await client.call("prompt", auto_fallback=False)
+
+        client._acompletion.assert_called_once()

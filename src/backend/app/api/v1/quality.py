@@ -16,6 +16,7 @@ from app.analysis.quality.service import (
     QualityAnalysisService,
 )
 from app.analysis.service import AnalysisStorageService
+from app.middleware.preferences import RequestPreferences, get_request_preferences
 
 router = APIRouter()
 
@@ -44,14 +45,14 @@ def _get_analysis_storage_service() -> AnalysisStorageService:
 
 
 async def _run_quality_analysis_background(
-    service: QualityAnalysisService, document_id: str
+    service: QualityAnalysisService, document_id: str, language: str = "es"
 ) -> None:
     """Run quality analysis as a background task.
 
     Exceptions are handled internally by the service (marks as failed).
     """
     try:
-        await service.run_analysis(document_id)
+        await service.run_analysis(document_id, language=language)
     except Exception:
         # Service already marks the session as failed on error.
         pass
@@ -73,6 +74,7 @@ async def trigger_quality_analysis(
     background_tasks: BackgroundTasks,
     quality_service: QualityAnalysisService = Depends(_get_quality_analysis_service),
     storage: AnalysisStorageService = Depends(_get_analysis_storage_service),
+    prefs: RequestPreferences = Depends(get_request_preferences),
 ):
     """Trigger quality analysis for a document.
 
@@ -139,7 +141,7 @@ async def trigger_quality_analysis(
 
     # Trigger analysis in background
     background_tasks.add_task(
-        _run_quality_analysis_background, quality_service, document_id
+        _run_quality_analysis_background, quality_service, document_id, prefs.language
     )
 
     return JSONResponse(

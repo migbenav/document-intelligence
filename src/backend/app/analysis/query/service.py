@@ -22,6 +22,12 @@ from app.models.query import QueryMetadata, QueryResponse
 
 logger = logging.getLogger(__name__)
 
+# ISO language code to full language name mapping
+LANGUAGE_MAP: dict[str, str] = {
+    "es": "Spanish",
+    "en": "English",
+}
+
 # Total timeout for the entire answer pipeline (seconds)
 _PIPELINE_TIMEOUT_SECONDS = 30
 
@@ -75,6 +81,9 @@ class QueryService:
         question: str,
         knowledge_model: KnowledgeModel,
         ir: IntermediateRepresentation,
+        language: str = "es",
+        model_override: str | None = None,
+        auto_fallback: bool = True,
     ) -> QueryResponse:
         """Process a natural language query and return a grounded answer.
 
@@ -93,6 +102,11 @@ class QueryService:
             question: The user's natural language question.
             knowledge_model: The completed Knowledge Model for the document.
             ir: The Intermediate Representation for evidence verification.
+            language: ISO language code ('es' or 'en') for LLM response language.
+                Defaults to 'es'.
+            model_override: If provided, override the default model selection.
+            auto_fallback: Whether to allow automatic fallback to alternate model
+                on transient errors. Defaults to True.
 
         Returns:
             QueryResponse with the answer, source_refs, and metadata.
@@ -102,7 +116,10 @@ class QueryService:
         """
         try:
             return await asyncio.wait_for(
-                self._execute_pipeline(document_id, question, knowledge_model, ir),
+                self._execute_pipeline(
+                    document_id, question, knowledge_model, ir, language,
+                    model_override=model_override, auto_fallback=auto_fallback,
+                ),
                 timeout=_PIPELINE_TIMEOUT_SECONDS,
             )
         except asyncio.TimeoutError:
@@ -116,6 +133,9 @@ class QueryService:
         question: str,
         knowledge_model: KnowledgeModel,
         ir: IntermediateRepresentation,
+        language: str = "es",
+        model_override: str | None = None,
+        auto_fallback: bool = True,
     ) -> QueryResponse:
         """Execute the query pipeline without timeout wrapping.
 
@@ -134,7 +154,7 @@ class QueryService:
         if context is None:
             return self._build_cannot_answer_response(document_id)
 
-        # Step 3: Build prompt
+        # Step 3: Build prompt with language instruction
         context_elements = [
             {
                 "type": elem.type,
@@ -153,19 +173,25 @@ class QueryService:
             }
             for rel in context.relations
         ]
-        prompt = query_answering_v1.build(context_elements, relations, question)
+        base_prompt = query_answering_v1.build(context_elements, relations, question)
+
+        # Prepend language instruction to the prompt
+        response_language = LANGUAGE_MAP.get(language, "Spanish")
+        prompt = f"Respond in {response_language}.\n{base_prompt}"
 
         # Step 4: Call LLM (primary tier)
         try:
             llm_response = await self._llm_client.call(
-                prompt, model_tier="primary", temperature=self._temperature
+                prompt, model_tier="primary", temperature=self._temperature,
+                model_override=model_override, auto_fallback=auto_fallback,
             )
         except Exception as e:
             raise QueryError(f"LLM call failed: {e}") from e
 
         # Step 5: Parse response (with one retry on failure)
         response = await self._parse_with_retry(
-            llm_response.content, document_id, prompt
+            llm_response.content, document_id, prompt,
+            model_override=model_override, auto_fallback=auto_fallback,
         )
 
         # Step 6: Verify evidence
@@ -191,7 +217,8 @@ class QueryService:
         return response
 
     async def _parse_with_retry(
-        self, raw_output: str, document_id: str, original_prompt: str
+        self, raw_output: str, document_id: str, original_prompt: str,
+        model_override: str | None = None, auto_fallback: bool = True,
     ) -> QueryResponse:
         """Parse LLM output with one retry on failure via corrective re-prompt.
 
@@ -199,6 +226,8 @@ class QueryService:
             raw_output: The raw LLM output from the first call.
             document_id: Document ID for source_ref mapping.
             original_prompt: The original prompt for corrective re-prompt construction.
+            model_override: If provided, override the default model selection.
+            auto_fallback: Whether to allow automatic fallback on transient errors.
 
         Returns:
             Validated QueryResponse.
@@ -224,7 +253,8 @@ class QueryService:
 
         try:
             retry_response = await self._llm_client.call(
-                corrective_prompt, model_tier="primary", temperature=self._temperature
+                corrective_prompt, model_tier="primary", temperature=self._temperature,
+                model_override=model_override, auto_fallback=auto_fallback,
             )
         except Exception as e:
             raise QueryError(

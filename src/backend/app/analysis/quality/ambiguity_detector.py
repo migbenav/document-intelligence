@@ -19,6 +19,12 @@ from app.models.quality_analysis import FindingSourceRef, Inconsistency
 
 logger = logging.getLogger(__name__)
 
+# ISO language code to full language name mapping
+LANGUAGE_MAP: dict[str, str] = {
+    "es": "Spanish",
+    "en": "English",
+}
+
 
 # --- Internal Pydantic models for parsing LLM response ---
 
@@ -79,6 +85,7 @@ class AmbiguityDetector:
         self,
         knowledge_model: KnowledgeModel,
         ir: IntermediateRepresentation,
+        language: str = "es",
     ) -> list[Inconsistency]:
         """Detect ambiguities in the document.
 
@@ -88,6 +95,8 @@ class AmbiguityDetector:
         Args:
             knowledge_model: The completed Knowledge Model for the document.
             ir: The intermediate representation with document text chunks.
+            language: ISO language code ('es' or 'en') for LLM response language.
+                Defaults to 'es'.
 
         Returns:
             A list of Inconsistency findings with type="ambiguity".
@@ -99,8 +108,9 @@ class AmbiguityDetector:
         elements_json = self._serialize_elements(knowledge_model)
         ir_text = self._serialize_ir_text(ir)
 
-        # Build prompt using versioned template
-        prompt = ambiguity_detection_v1.build(elements_json, ir_text)
+        # Build prompt using versioned template with language instruction
+        response_language = LANGUAGE_MAP.get(language, "Spanish")
+        prompt = f"Respond in {response_language}.\n{ambiguity_detection_v1.build(elements_json, ir_text)}"
 
         # Call LLM (primary model, temperature 0.1)
         try:

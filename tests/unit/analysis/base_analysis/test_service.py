@@ -233,11 +233,14 @@ class TestAnalyzeSuccess:
 
         # Local analyzer called with IR
         mock_local_analyzer.analyze.assert_called_once_with(ir)
-        # LLM analyzer called with title, chunks, org_type
+        # LLM analyzer called with title, chunks, org_type, language
         mock_llm_analyzer.analyze.assert_called_once_with(
             title="Disposiciones generales",
             chunks=ir.chunks,
             organization_type=OrganizationType.NUMBERED_ARTICLES,
+            language="es",
+            model_override=None,
+            auto_fallback=True,
         )
         # Storage upsert called
         mock_storage.upsert_card.assert_called_once()

@@ -53,6 +53,12 @@ class LLMContradictionResponse(BaseModel):
     findings: list[LLMContradictionFinding]
 
 
+LANGUAGE_MAP: dict[str, str] = {
+    "es": "Spanish",
+    "en": "English",
+}
+
+
 class ContradictionDetector:
     """Detects contradictions from structural relationships and LLM analysis.
 
@@ -74,6 +80,7 @@ class ContradictionDetector:
         self,
         knowledge_model: KnowledgeModel,
         ir: IntermediateRepresentation,
+        language: str = "es",
     ) -> list[Inconsistency]:
         """Detect contradictions in the Knowledge Model.
 
@@ -85,6 +92,7 @@ class ContradictionDetector:
         Args:
             knowledge_model: The completed Knowledge Model to analyze.
             ir: The intermediate representation with document text chunks.
+            language: ISO language code ('es' or 'en') for LLM response language.
 
         Returns:
             A list of Inconsistency findings of type "contradiction".
@@ -100,7 +108,7 @@ class ContradictionDetector:
         # Step 2: LLM-based deeper analysis
         try:
             llm_contradictions = await self._detect_llm_contradictions(
-                knowledge_model, ir
+                knowledge_model, ir, language=language
             )
         except ValueError:
             # Parse failure: raise to caller (Req 10.2, 10.3)
@@ -222,12 +230,14 @@ class ContradictionDetector:
         self,
         knowledge_model: KnowledgeModel,
         ir: IntermediateRepresentation,
+        language: str = "es",
     ) -> list[Inconsistency]:
         """Use LLM to detect additional semantic contradictions.
 
         Args:
             knowledge_model: The Knowledge Model to analyze.
             ir: The intermediate representation with text chunks.
+            language: ISO language code ('es' or 'en') for LLM response language.
 
         Returns:
             List of LLM-detected contradiction findings.
@@ -284,6 +294,10 @@ class ContradictionDetector:
             relationships_json=relationships_json,
             ir_text=ir_text,
         )
+
+        # Prepend language instruction to the prompt
+        response_language = LANGUAGE_MAP.get(language, "Spanish")
+        prompt = f"Respond in {response_language}.\n{prompt}"
 
         # Call LLM (primary model, temperature 0.1)
         response = await self._llm_client.call(

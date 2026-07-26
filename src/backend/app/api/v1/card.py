@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.analysis.base_analysis.service import BaseAnalysisService, CardNotFoundError
 from app.analysis.base_analysis.storage import BaseAnalysisStorage
 from app.ingestion.storage import StorageService
+from app.middleware.preferences import RequestPreferences, get_request_preferences
 from app.models.document_card import DocumentCard
 
 router = APIRouter()
@@ -121,6 +122,7 @@ async def retry_llm(
     analysis_service: BaseAnalysisService = Depends(_get_base_analysis_service),
     storage: BaseAnalysisStorage = Depends(_get_base_analysis_storage),
     ingestion_storage: StorageService = Depends(_get_storage_service),
+    prefs: RequestPreferences = Depends(get_request_preferences),
 ):
     """Retry only the LLM phase for a partial or failed card.
 
@@ -172,5 +174,11 @@ async def retry_llm(
         )
 
     # Execute LLM retry
-    updated_card = await analysis_service.retry_llm(normalized_id, ir)
+    updated_card = await analysis_service.retry_llm(
+        normalized_id,
+        ir,
+        language=prefs.language,
+        model_override=prefs.model_override,
+        auto_fallback=prefs.auto_fallback,
+    )
     return updated_card

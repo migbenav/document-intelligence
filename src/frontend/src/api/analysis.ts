@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './client';
+import { API_BASE_URL, apiFetch } from './client';
 
 /** Timeout for analysis operations (LLM calls can take 60-90s for large docs) */
 const ANALYSIS_TIMEOUT_MS = 180_000;
@@ -28,7 +28,7 @@ export async function startAnalysis(documentId: string): Promise<AnalyzeResponse
   const timeoutId = setTimeout(() => controller.abort(), ANALYSIS_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'POST',
       signal: controller.signal,
     });
@@ -57,7 +57,7 @@ export async function confirmType(
   const timeoutId = setTimeout(() => controller.abort(), ANALYSIS_TIMEOUT_MS);
 
   try {
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ document_type: documentType }),

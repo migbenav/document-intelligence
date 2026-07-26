@@ -39,9 +39,9 @@ interface TranslationProviderProps {
   children: ReactNode;
 }
 
-export function TranslationProvider({ locale = 'en', children }: TranslationProviderProps) {
+export function TranslationProvider({ locale = 'es', children }: TranslationProviderProps) {
   const value = useMemo<TranslationContextValue>(() => {
-    const messages = translations[locale] ?? translations['en']!;
+    const messages = translations[locale] ?? translations['es']!;
 
     const t = (key: string, params?: Record<string, string>): string => {
       const raw = getNestedValue(messages, key);

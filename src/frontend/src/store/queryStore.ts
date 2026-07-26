@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { API_BASE_URL } from '@/api/client';
+import { API_BASE_URL, apiFetch } from '@/api/client';
 
 // --- Types ---
 
@@ -97,7 +97,7 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), QUERY_TIMEOUT_MS);
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE_URL}/api/v1/documents/${documentId}/query`,
         {
           method: 'POST',

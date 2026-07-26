@@ -33,6 +33,12 @@ MAX_SUGGESTIONS = 20
 # Priority ordering for truncation: low < medium < high (truncate lowest first)
 _PRIORITY_ORDER = {"low": 0, "medium": 1, "high": 2}
 
+# ISO language code to full language name mapping
+LANGUAGE_MAP: dict[str, str] = {
+    "es": "Spanish",
+    "en": "English",
+}
+
 
 class SuggestionGenerator:
     """Generates actionable improvement suggestions from findings.
@@ -59,6 +65,7 @@ class SuggestionGenerator:
         missing_elements: list[MissingElement],
         knowledge_model: KnowledgeModel,
         ir: IntermediateRepresentation,
+        document_language: str = "es",
     ) -> list[Suggestion]:
         """Generate suggestions based on findings.
 
@@ -71,6 +78,9 @@ class SuggestionGenerator:
             missing_elements: Missing or partial elements from completeness evaluation.
             knowledge_model: The Knowledge Model providing document context.
             ir: The Intermediate Representation with original document text.
+            document_language: ISO language code ('es' or 'en') for the document's
+                language. Suggestions will be generated in this language.
+                Defaults to 'es'.
 
         Returns:
             A list of Suggestion objects, at most 20, with guaranteed
@@ -87,8 +97,11 @@ class SuggestionGenerator:
         # If zero findings and we pass through empty findings
         has_findings = len(inconsistencies) > 0 or len(missing_elements) > 0
 
+        # Resolve response language from document_language code
+        response_language = LANGUAGE_MAP.get(document_language, "Spanish")
+
         # Build prompt
-        prompt = suggestion_generation_v1.build(findings_json, elements_json, ir_text)
+        prompt = suggestion_generation_v1.build(findings_json, elements_json, ir_text, response_language=response_language)
 
         # Call LLM (primary model, temperature 0.1)
         response = await self._llm_client.call(

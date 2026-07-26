@@ -57,7 +57,13 @@ class BaseAnalysisService:
         self._storage = storage
 
     async def analyze(
-        self, document_id: str, ir: IntermediateRepresentation
+        self,
+        document_id: str,
+        ir: IntermediateRepresentation,
+        *,
+        language: str = "es",
+        model_override: str | None = None,
+        auto_fallback: bool = True,
     ) -> DocumentCard:
         """Execute base analysis (local + LLM). Returns completed or partial card.
 
@@ -70,6 +76,9 @@ class BaseAnalysisService:
         Args:
             document_id: UUID of the document to analyze.
             ir: The IntermediateRepresentation from ingestion.
+            language: Language code for LLM response ('es' or 'en'). Defaults to 'es'.
+            model_override: If provided, override the default model for LLM calls.
+            auto_fallback: Whether to enable automatic fallback on transient errors.
 
         Returns:
             A DocumentCard with status "completed" or "partial".
@@ -92,6 +101,9 @@ class BaseAnalysisService:
                 title=local_result.title,
                 chunks=ir.chunks,
                 organization_type=local_result.organization_type,
+                language=language,
+                model_override=model_override,
+                auto_fallback=auto_fallback,
             )
 
             # Step 3: Build DocumentCard
@@ -120,7 +132,13 @@ class BaseAnalysisService:
             return await self._build_fallback_card(document_id, ir)
 
     async def retry_llm(
-        self, document_id: str, ir: IntermediateRepresentation
+        self,
+        document_id: str,
+        ir: IntermediateRepresentation,
+        *,
+        language: str = "es",
+        model_override: str | None = None,
+        auto_fallback: bool = True,
     ) -> DocumentCard:
         """Re-execute only the LLM phase for an existing card.
 
@@ -131,6 +149,9 @@ class BaseAnalysisService:
         Args:
             document_id: UUID of the document whose card to retry.
             ir: The IntermediateRepresentation for context.
+            language: Language code for LLM response ('es' or 'en'). Defaults to 'es'.
+            model_override: If provided, override the default model for LLM calls.
+            auto_fallback: Whether to enable automatic fallback on transient errors.
 
         Returns:
             The updated DocumentCard.
@@ -149,6 +170,9 @@ class BaseAnalysisService:
             title=existing_card.title,
             chunks=ir.chunks,
             organization_type=existing_card.organization_type,
+            language=language,
+            model_override=model_override,
+            auto_fallback=auto_fallback,
         )
 
         # Update card fields

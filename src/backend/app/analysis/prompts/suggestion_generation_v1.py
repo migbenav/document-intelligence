@@ -103,7 +103,7 @@ in the document content.
 """
 
 
-def build(findings_json: str, elements_json: str, ir_text: str) -> str:
+def build(findings_json: str, elements_json: str, ir_text: str, response_language: str = "Spanish") -> str:
     """Construct the suggestion generation prompt from findings and KM context.
 
     Args:
@@ -116,13 +116,16 @@ def build(findings_json: str, elements_json: str, ir_text: str) -> str:
         ir_text: The IR text chunks referenced by KM elements, providing
             the original document text for source_ref generation.
             Must NOT contain user metadata or session info (Req 9.2).
+        response_language: The full language name for the LLM response
+            (e.g., "Spanish", "English"). Defaults to "Spanish".
 
     Returns:
         The complete prompt string ready to send to the LLM.
     """
+    language_instruction = f"Respond in {response_language}.\n\n"
     instructions = _SYSTEM_INSTRUCTIONS + _JSON_SCHEMA + _SYSTEM_INSTRUCTIONS_FOOTER
 
-    return f"""{instructions}
+    return f"""{language_instruction}{instructions}
 
 --- QUALITY FINDINGS ---
 {findings_json}

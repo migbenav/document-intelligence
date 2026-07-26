@@ -104,7 +104,9 @@ class QualityAnalysisService:
         self._finding_verifier = finding_verifier
         self._storage = storage
 
-    async def run_analysis(self, document_id: str) -> QualityAnalysisResult:
+    async def run_analysis(
+        self, document_id: str, language: str = "es"
+    ) -> QualityAnalysisResult:
         """Run the full quality analysis pipeline.
 
         Prerequisites: completed KM (Req 8.1).
@@ -112,6 +114,8 @@ class QualityAnalysisService:
 
         Args:
             document_id: The document to analyze.
+            language: ISO language code ('es' or 'en') for LLM response language.
+                Propagated to all sub-detectors. Defaults to 'es'.
 
         Returns:
             QualityAnalysisResult with findings and metadata.
@@ -154,7 +158,9 @@ class QualityAnalysisService:
         # Execute pipeline with 120-second timeout (Req 6.7)
         try:
             result = await asyncio.wait_for(
-                self._execute_pipeline(document_id, session, session_id, started_at),
+                self._execute_pipeline(
+                    document_id, session, session_id, started_at, language
+                ),
                 timeout=PIPELINE_TIMEOUT_SECONDS,
             )
             return result
@@ -212,6 +218,7 @@ class QualityAnalysisService:
         session: dict,
         session_id: str,
         started_at: datetime,
+        language: str = "es",
     ) -> QualityAnalysisResult:
         """Execute the full quality analysis pipeline.
 
@@ -230,6 +237,7 @@ class QualityAnalysisService:
             session: The analysis session row dict.
             session_id: The session ID for DB updates.
             started_at: Pipeline start timestamp.
+            language: ISO language code ('es' or 'en') for LLM response language.
 
         Returns:
             The completed QualityAnalysisResult.
@@ -247,7 +255,9 @@ class QualityAnalysisService:
         self._storage.update_session(session_id, quality_status="analyzing_contradictions")
 
         try:
-            inconsistencies = await self._contradiction_detector.detect(km, ir)
+            inconsistencies = await self._contradiction_detector.detect(
+                km, ir, language=language
+            )
         except Exception as e:
             # Preserve explicit-relationship contradictions on failure (Req 6.4)
             await self._mark_failed(
@@ -262,7 +272,9 @@ class QualityAnalysisService:
         self._storage.update_session(session_id, quality_status="analyzing_ambiguities")
 
         try:
-            ambiguities = await self._ambiguity_detector.detect(km, ir)
+            ambiguities = await self._ambiguity_detector.detect(
+                km, ir, language=language
+            )
             inconsistencies.extend(ambiguities)
         except Exception as e:
             await self._mark_failed(
@@ -278,7 +290,7 @@ class QualityAnalysisService:
 
         try:
             missing_elements = await self._completeness_evaluator.evaluate(
-                km, document_type
+                km, document_type, language=language
             )
         except Exception as e:
             await self._mark_failed(
@@ -294,7 +306,8 @@ class QualityAnalysisService:
 
         try:
             suggestions = await self._suggestion_generator.generate(
-                inconsistencies, missing_elements, km, ir
+                inconsistencies, missing_elements, km, ir,
+                document_language=language,
             )
         except Exception as e:
             await self._mark_failed(

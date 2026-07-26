@@ -29,6 +29,12 @@ MAX_CHUNKS = 10
 # Maximum character length for the text sample
 MAX_TEXT_SAMPLE_CHARS = 2000
 
+# ISO language code to full language name mapping
+LANGUAGE_MAP: dict[str, str] = {
+    "es": "Spanish",
+    "en": "English",
+}
+
 
 @dataclass
 class LLMAnalysisResult:
@@ -61,6 +67,9 @@ class LLMAnalyzer:
         title: str,
         chunks: list[ContentChunkModel],
         organization_type: OrganizationType,
+        language: str = "es",
+        model_override: str | None = None,
+        auto_fallback: bool = True,
     ) -> LLMAnalysisResult | None:
         """Call the light model to produce a summary and classification.
 
@@ -74,15 +83,22 @@ class LLMAnalyzer:
             title: The document title (extracted during local processing).
             chunks: The document's content chunks from the IR.
             organization_type: The detected organization type.
+            language: ISO language code ('es' or 'en'). Defaults to 'es'.
+            model_override: If provided, override the default model for this call.
+            auto_fallback: Whether to enable automatic fallback on transient errors.
 
         Returns:
             LLMAnalysisResult on success, None on any failure.
         """
         try:
-            prompt = self._build_prompt(title, chunks, organization_type)
+            prompt = self._build_prompt(title, chunks, organization_type, language)
             response = await asyncio.wait_for(
                 self._llm_client.call(
-                    prompt, model_tier="light", temperature=0.1
+                    prompt,
+                    model_tier="light",
+                    temperature=0.1,
+                    model_override=model_override,
+                    auto_fallback=auto_fallback,
                 ),
                 timeout=LLM_TIMEOUT_SECONDS,
             )
@@ -124,6 +140,7 @@ class LLMAnalyzer:
         title: str,
         chunks: list[ContentChunkModel],
         organization_type: OrganizationType,
+        language: str = "es",
     ) -> str:
         """Build the prompt from title, organization type, and text sample.
 
@@ -134,12 +151,15 @@ class LLMAnalyzer:
             title: The document title.
             chunks: The document's content chunks.
             organization_type: The detected organization type.
+            language: ISO language code ('es' or 'en'). Defaults to 'es'.
 
         Returns:
             The formatted prompt string.
         """
         text_sample = self._build_text_sample(chunks)
+        response_language = LANGUAGE_MAP.get(language, "Spanish")
         return PROMPT_TEMPLATE.format(
+            response_language=response_language,
             title=title,
             organization_type=organization_type.value,
             text_sample=text_sample,
