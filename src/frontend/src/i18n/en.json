@@ -92,5 +92,35 @@
       "elements": "{count} elements",
       "noElements": "No elements"
     }
+  },
+  "query": {
+    "evidence": {
+      "verified": "Verified",
+      "verifiedDescription": "Evidence confirmed in source document",
+      "notVerified": "Not verified",
+      "notVerifiedDescription": "Evidence not found in source document",
+      "showMore": "Show more",
+      "showLess": "Show less",
+      "section": "Section: {section}",
+      "page": "Page {page}",
+      "navigateToSource": "Navigate to source"
+    },
+    "message": {
+      "loading": "Processing your question",
+      "cannotAnswerHint": "Try rephrasing your question or asking about a different topic covered in the document.",
+      "errorTitle": "Something went wrong",
+      "errorHint": "Please try again later."
+    },
+    "input": {
+      "label": "Ask a question about this document",
+      "placeholder": "Ask a question about this document...",
+      "submit": "Submit question",
+      "charCounter": "{current}/{max}"
+    },
+    "panel": {
+      "ariaLabel": "Document query chat",
+      "emptyState": "Ask a question about this document to get started.",
+      "loading": "Processing your question, please wait."
+    }
   }
 }

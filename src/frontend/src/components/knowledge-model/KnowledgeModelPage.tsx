@@ -6,6 +6,7 @@ import { ElementDetailPanel } from './ElementDetailPanel';
 import { LoadingState } from './LoadingState';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
+import { QueryPanel } from '@/components/query/QueryPanel';
 
 interface KnowledgeModelPageProps {
   documentId: string;
@@ -90,6 +91,11 @@ export function KnowledgeModelPage({ documentId }: KnowledgeModelPageProps) {
         {selectedElement && (
           <ElementDetailPanel element={selectedElement} allElements={km.elements} />
         )}
+      </div>
+
+      {/* Query Panel: shown alongside KM visualization when KM is completed */}
+      <div className="min-h-[300px] max-h-[500px]" data-testid="km-query-panel-container">
+        <QueryPanel documentId={documentId} isKmCompleted={status === 'loaded'} />
       </div>
     </div>
   );

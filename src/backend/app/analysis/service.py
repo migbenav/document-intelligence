@@ -347,6 +347,39 @@ class AnalysisService:
             return None
         return session_row.get("knowledge_model")
 
+    async def get_knowledge_model_object(self, document_id: str):
+        """Retrieve the Knowledge Model as a Pydantic KnowledgeModel instance.
+
+        Args:
+            document_id: The document to get the KM for.
+
+        Returns:
+            KnowledgeModel if analysis is completed and KM exists, None otherwise.
+        """
+        from app.models.knowledge_model import KnowledgeModel
+
+        km_dict = await self.get_knowledge_model(document_id)
+        if km_dict is None:
+            return None
+        return KnowledgeModel.model_validate(km_dict)
+
+    async def get_ir(self, document_id: str):
+        """Retrieve the Intermediate Representation for a document.
+
+        Public wrapper around the internal _get_ir method for use by
+        other services (e.g., QueryService).
+
+        Args:
+            document_id: The document to get the IR for.
+
+        Returns:
+            IntermediateRepresentation for the document.
+
+        Raises:
+            DocumentNotFoundError: Document does not exist.
+        """
+        return await self._get_ir(document_id)
+
     async def get_session(self, document_id: str) -> AnalysisSession | None:
         """Retrieve the analysis session for a document.
 

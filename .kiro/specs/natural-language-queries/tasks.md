@@ -6,8 +6,8 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
 
 ## Tasks
 
-- [ ] 1. Define query data models and prompt templates
-  - [ ] 1.1 Create query Pydantic models
+- [x] 1. Define query data models and prompt templates
+  - [x] 1.1 Create query Pydantic models
     - Create `src/backend/app/models/query.py` with: `QueryRequest`, `QueryResponse`, `QuerySourceRef`, `QueryMetadata`, `QueryErrorResponse`, `QueryContext`, `QueryContextElement`, `QueryContextRelation`
     - `QueryRequest`: question field with min_length=1, max_length=1000
     - `QueryResponse`: answer (max 5000 chars), answerable bool, source_refs (max 10), all_evidence_unverified bool, metadata
@@ -19,7 +19,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - `QueryContextRelation`: source_id, target_id, type, optional description
     - _Requirements: 1.1, 1.4, 3.1, 3.2, 3.5, 3.6, 5.1_
 
-  - [ ] 1.2 Create query answering prompt template
+  - [x] 1.2 Create query answering prompt template
     - Create `src/backend/app/analysis/prompts/query_answering_v1.py`
     - Define `VERSION = "query-answering-v1"` constant
     - Implement `build(context_elements: list, relations: list, question: str) -> str` function
@@ -27,7 +27,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Include only: KM element fields (type, name, content, evidence), relations (source_id, target_id, type), user question as plain string — no user identity, session history, account metadata, or document_id
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 2.6, 7.2_
 
-  - [ ] 1.3 Create query relevance scoring prompt template
+  - [x] 1.3 Create query relevance scoring prompt template
     - Create `src/backend/app/analysis/prompts/query_relevance_scoring_v1.py`
     - Define `VERSION = "query-relevance-scoring-v1"` constant
     - Implement `build(question: str, element_summaries: list[dict[str, str]]) -> str` function
@@ -36,15 +36,15 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Output format: JSON array of {"id": "...", "score": N}
     - _Requirements: 2.1, 6.1_
 
-  - [ ]* 1.4 Write unit tests for query models
+  - [x] 1.4 Write unit tests for query models
     - Create `src/backend/tests/unit/analysis/query/test_query_models.py`
     - Test validation: question min/max length, answer max length, evidence max 500 chars, source_refs max 10
     - Test defaults: evidence_verified=False, all_evidence_unverified=False
     - Test serialization/deserialization round-trips
     - _Requirements: 1.1, 1.8, 3.5, 5.1, 5.4_
 
-- [ ] 2. Implement ContextBuilder
-  - [ ] 2.1 Implement ContextBuilder module
+- [x] 2. Implement ContextBuilder
+  - [x] 2.1 Implement ContextBuilder module
     - Create `src/backend/app/analysis/query/__init__.py`
     - Create `src/backend/app/analysis/query/context_builder.py`
     - Implement `ContextBuilder` class with `__init__(self, llm_client, max_elements=20, budget_ratio=0.6)`
@@ -59,7 +59,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - On scoring LLM failure: fallback to including all elements up to token budget (no ranking)
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7_
 
-  - [ ]* 2.2 Write unit tests for ContextBuilder
+  - [x] 2.2 Write unit tests for ContextBuilder
     - Create `src/backend/tests/unit/analysis/query/test_context_builder.py`
     - Test element selection with mocked LLM scoring responses
     - Test max 20 element cap enforcement
@@ -71,21 +71,21 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Test unverified element annotation
     - _Requirements: 2.1, 2.2, 2.4, 2.5, 2.7_
 
-  - [ ]* 2.3 Write property test for Context Budget Compliance (Property 2)
+  - [x] 2.3 Write property test for Context Budget Compliance (Property 2)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 2: Context Budget Compliance**
     - Generate KMs of varying sizes (1–100 elements), verify max 20 elements selected and total_tokens ≤ 60% of context_window_tokens
     - Use mocked LLM scoring that returns random scores
     - **Validates: Requirements 2.1, 2.4**
 
-  - [ ]* 2.4 Write property test for Relational Context One-Hop Bound (Property 3)
+  - [x] 2.4 Write property test for Relational Context One-Hop Bound (Property 3)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 3: Relational Context One-Hop Bound**
     - Generate KMs with deep relationship chains (3+ hops), verify only elements reachable in exactly one hop from directly relevant elements appear in context
     - **Validates: Requirements 2.2**
 
-- [ ] 3. Implement ResponseParser
-  - [ ] 3.1 Implement ResponseParser module
+- [x] 3. Implement ResponseParser
+  - [x] 3.1 Implement ResponseParser module
     - Create `src/backend/app/analysis/query/response_parser.py`
     - Implement `ResponseParser` class
     - Implement `parse(self, raw_output: str, document_id: str) -> QueryResponse` — extracts JSON from LLM output, validates against QueryResponse Pydantic schema, sets document_id on each source_ref (LLM output has only chunk_ids)
@@ -94,7 +94,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Handle common LLM output issues: JSON wrapped in markdown code fences, trailing text after JSON
     - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6_
 
-  - [ ]* 3.2 Write unit tests for ResponseParser
+  - [x] 3.2 Write unit tests for ResponseParser
     - Create `src/backend/tests/unit/analysis/query/test_response_parser.py`
     - Test valid JSON parsing and Pydantic validation
     - Test document_id post-mapping to all source_refs
@@ -104,17 +104,17 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Test evidence max 500 char enforcement
     - _Requirements: 3.1, 3.2, 3.3, 3.5, 3.6_
 
-  - [ ]* 3.3 Write property test for Response Structural Completeness (Property 1)
+  - [x] 3.3 Write property test for Response Structural Completeness (Property 1)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 1: Response Structural Completeness**
     - Generate random valid QueryResponses with answerable=True, verify: non-empty answer (≤5000 chars), 1–10 source_refs, each source_ref has non-empty document_id, non-empty chunk_id, evidence ≤500 chars
     - **Validates: Requirements 1.1, 3.1, 3.2, 3.5, 5.1**
 
-- [ ] 4. Checkpoint - Ensure all tests pass
+- [x] 4. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 5. Implement QueryEvidenceVerifier
-  - [ ] 5.1 Implement QueryEvidenceVerifier module
+- [x] 5. Implement QueryEvidenceVerifier
+  - [x] 5.1 Implement QueryEvidenceVerifier module
     - Create `src/backend/app/analysis/query/evidence_verifier.py`
     - Implement `QueryEvidenceVerifier` class with `__init__(self, fuzzy_threshold=0.8)`
     - Implement `verify(self, source_refs: list[QuerySourceRef], ir) -> list[QuerySourceRef]`
@@ -124,7 +124,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Deterministic — no LLM calls
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7_
 
-  - [ ]* 5.2 Write unit tests for QueryEvidenceVerifier
+  - [x] 5.2 Write unit tests for QueryEvidenceVerifier
     - Create `src/backend/tests/unit/analysis/query/test_evidence_verifier.py`
     - Test exact match in referenced chunk
     - Test exact match in different chunk
@@ -134,14 +134,14 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Test all_evidence_unverified flag computation
     - _Requirements: 4.1, 4.2, 4.3, 4.5, 4.6, 4.7_
 
-  - [ ]* 5.3 Write property test for Evidence Verification Determinism (Property 6)
+  - [x] 5.3 Write property test for Evidence Verification Determinism (Property 6)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 6: Evidence Verification Determinism**
     - Generate random source_refs and fixed IR, apply verification twice, verify identical results; verify all_evidence_unverified is True when all source_refs have evidence_verified=False
     - **Validates: Requirements 4.1, 4.2, 4.3, 4.5**
 
-- [ ] 6. Implement QueryService orchestrator
-  - [ ] 6.1 Implement QueryService module
+- [x] 6. Implement QueryService orchestrator
+  - [x] 6.1 Implement QueryService module
     - Create `src/backend/app/analysis/query/service.py`
     - Implement `QueryService` class with `__init__(self, llm_client, context_builder, response_parser, evidence_verifier)`
     - Implement `async answer(self, document_id, question, knowledge_model, ir) -> QueryResponse`
@@ -151,7 +151,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Each query is independent — no state maintained between calls
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 7.3, 7.4, 7.5_
 
-  - [ ]* 6.2 Write unit tests for QueryService
+  - [x] 6.2 Write unit tests for QueryService
     - Create `src/backend/tests/unit/analysis/query/test_query_service.py`
     - Test successful pipeline end-to-end with mocked dependencies
     - Test cannot-answer response when context is empty (None)
@@ -162,29 +162,29 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Test temperature ≤ 0.1 default
     - _Requirements: 1.1, 1.3, 1.5, 1.6, 7.3, 7.4_
 
-  - [ ]* 6.3 Write property test for Query Statelessness (Property 7)
+  - [x] 6.3 Write property test for Query Statelessness (Property 7)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 7: Query Statelessness**
     - Generate sequences of queries to the same QueryService instance, verify each query's context and response is identical regardless of position in the sequence
     - **Validates: Requirements 1.6**
 
-  - [ ]* 6.4 Write property test for Metadata Completeness (Property 10)
+  - [x] 6.4 Write property test for Metadata Completeness (Property 10)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 10: Metadata Completeness**
     - Generate random QueryResponses (answerable and not), verify metadata always contains: non-empty prompt_version matching VERSION constant, non-empty model_id, temperature float, timestamp in ISO 8601 UTC
     - **Validates: Requirements 1.4, 7.3, 5.1**
 
-  - [ ]* 6.5 Write property test for Controlled Temperature (Property 11)
+  - [x] 6.5 Write property test for Controlled Temperature (Property 11)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 11: Controlled Temperature**
     - Verify LLM calls use temperature ≤ 0.1 by default; if overridden, actual temperature is recorded in metadata
     - **Validates: Requirements 7.4**
 
-- [ ] 7. Checkpoint - Ensure all tests pass
+- [x] 7. Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 8. Implement API endpoint
-  - [ ] 8.1 Create query API endpoint
+- [x] 8. Implement API endpoint
+  - [x] 8.1 Create query API endpoint
     - Create `src/backend/app/api/v1/query.py`
     - Implement `POST /api/v1/documents/{document_id}/query` endpoint
     - Request body: `QueryRequest` (question field validated by Pydantic)
@@ -199,56 +199,56 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Register router in the application
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 1.7, 1.8_
 
-  - [ ]* 8.2 Write property test for Knowledge Model Prerequisite Gate (Property 8)
+  - [x] 8.2 Write property test for Knowledge Model Prerequisite Gate (Property 8)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 8: Knowledge Model Prerequisite Gate**
     - Generate documents with various analysis statuses (not "completed"), verify 409 returned without executing any pipeline (no LLM calls)
     - **Validates: Requirements 1.7, 5.2**
 
-  - [ ]* 8.3 Write property test for Input Validation (Property 9)
+  - [x] 8.3 Write property test for Input Validation (Property 9)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 9: Input Validation**
     - Generate empty strings and strings >1000 chars, verify 422 returned without executing any pipeline
     - **Validates: Requirements 1.8, 5.4**
 
-  - [ ]* 8.4 Write property test for Empty Context Cannot-Answer (Property 5)
+  - [x] 8.4 Write property test for Empty Context Cannot-Answer (Property 5)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 5: Empty Context Cannot-Answer**
     - Generate queries where context construction returns None (zero elements), verify response has answerable=False, non-empty answer explaining limitation, empty source_refs list
     - **Validates: Requirements 1.3, 2.7**
 
-  - [ ]* 8.5 Write property test for Data Minimization (Property 4)
+  - [x] 8.5 Write property test for Data Minimization (Property 4)
     - Add to `src/backend/tests/property/analysis/test_query_properties.py`
     - **Property 4: Data Minimization**
     - Generate random prompts via query_answering_v1.build(), verify no user identity, session history, account metadata, document_id, or unrelated information is present
     - **Validates: Requirements 2.6, 6.3, 7.2**
 
-- [ ] 9. Checkpoint - Ensure all backend tests pass
+- [x] 9. Checkpoint - Ensure all backend tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
-- [ ] 10. Implement frontend query panel
-  - [ ] 10.1 Create Zustand query store
+- [x] 10. Implement frontend query panel
+  - [x] 10.1 Create Zustand query store
     - Create query store file in `src/frontend/src/store/` (following existing store patterns)
     - State: messages array (question-answer pairs), isLoading, error
     - Actions: submitQuery (calls API), clearMessages (reset on navigation)
     - Session scoped to page lifecycle (cleared on unmount)
     - _Requirements: 8.6, 1.6_
 
-  - [ ] 10.2 Create API client function for queries
+  - [x] 10.2 Create API client function for queries
     - Add query function to existing API client in `src/frontend/src/api/`
     - Function: `queryDocument(documentId: string, question: string): Promise<QueryResponse>`
     - Handle 30-second timeout on client side
     - Map error responses (404, 409, 422, 500) to typed error objects
     - _Requirements: 5.1, 8.2_
 
-  - [ ] 10.3 Implement VerificationBadge component
+  - [x] 10.3 Implement VerificationBadge component
     - Create `src/frontend/src/components/query/VerificationBadge.tsx`
     - Display verified/unverified status with distinct iconography and text labels (not color alone)
     - Meet WCAG 2.1 AA contrast ratio: 4.5:1 for text, 3:1 for graphical elements
     - Focusable via keyboard
     - _Requirements: 8.3, 8.7_
 
-  - [ ] 10.4 Implement EvidenceReference component
+  - [x] 10.4 Implement EvidenceReference component
     - Create `src/frontend/src/components/query/EvidenceReference.tsx`
     - Display evidence text span (truncated to 200 chars with expand option)
     - Show section/page reference when available
@@ -258,7 +258,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Keyboard focusable and activatable
     - _Requirements: 8.3, 8.4, 8.7_
 
-  - [ ] 10.5 Implement QueryMessage component
+  - [x] 10.5 Implement QueryMessage component
     - Create `src/frontend/src/components/query/QueryMessage.tsx`
     - Display question-answer pair with visual distinction between user question and system answer
     - Render answer text
@@ -267,7 +267,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Display error messages with apologetic tone (no technical details)
     - _Requirements: 8.3, 8.5_
 
-  - [ ] 10.6 Implement QueryInput component
+  - [x] 10.6 Implement QueryInput component
     - Create `src/frontend/src/components/query/QueryInput.tsx`
     - Text input field with character counter showing current/1000 max
     - Disable submit when input is empty or exceeds 1000 chars
@@ -275,7 +275,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Keyboard navigable (Enter to submit)
     - _Requirements: 8.1, 8.7_
 
-  - [ ] 10.7 Implement QueryPanel component and integrate
+  - [x] 10.7 Implement QueryPanel component and integrate
     - Create `src/frontend/src/components/query/QueryPanel.tsx`
     - Main container: scrollable list of QueryMessage components + QueryInput at bottom
     - Connect to Zustand store for state management
@@ -287,8 +287,8 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - Integrate QueryPanel into the document view (alongside existing KM visualization)
     - _Requirements: 8.1, 8.2, 8.5, 8.6, 8.7_
 
-- [ ] 11. Integration tests
-  - [ ]* 11.1 Write integration tests for query flow
+- [x] 11. Integration tests
+  - [x] 11.1 Write integration tests for query flow
     - Create `src/backend/tests/integration/analysis/test_query_flow.py`
     - Test full pipeline via httpx AsyncClient: document with completed KM → POST query → receive answer with verified evidence
     - Test 404 for non-existent document
@@ -299,7 +299,7 @@ Implement the Natural Language Queries feature (Feature 6) that enables users to
     - All tests use mocked LLM responses
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5, 1.3_
 
-- [ ] 12. Final checkpoint - Ensure all tests pass
+- [x] 12. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

@@ -92,5 +92,35 @@
       "elements": "{count} elementos",
       "noElements": "Sin elementos"
     }
+  },
+  "query": {
+    "evidence": {
+      "verified": "Verificado",
+      "verifiedDescription": "Evidencia confirmada en el documento fuente",
+      "notVerified": "No verificado",
+      "notVerifiedDescription": "Evidencia no encontrada en el documento fuente",
+      "showMore": "Mostrar más",
+      "showLess": "Mostrar menos",
+      "section": "Sección: {section}",
+      "page": "Página {page}",
+      "navigateToSource": "Navegar a la fuente"
+    },
+    "message": {
+      "loading": "Procesando tu pregunta",
+      "cannotAnswerHint": "Intenta reformular tu pregunta o preguntar sobre otro tema cubierto en el documento.",
+      "errorTitle": "Algo salió mal",
+      "errorHint": "Por favor intenta de nuevo más tarde."
+    },
+    "input": {
+      "label": "Haz una pregunta sobre este documento",
+      "placeholder": "Haz una pregunta sobre este documento...",
+      "submit": "Enviar pregunta",
+      "charCounter": "{current}/{max}"
+    },
+    "panel": {
+      "ariaLabel": "Chat de consulta del documento",
+      "emptyState": "Haz una pregunta sobre este documento para comenzar.",
+      "loading": "Procesando tu pregunta, por favor espera."
+    }
   }
 }

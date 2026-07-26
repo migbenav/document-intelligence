@@ -17,6 +17,11 @@ from app.api.v1.quality import (
     _get_quality_analysis_service,
     router as quality_router,
 )
+from app.api.v1.query import (
+    _get_analysis_service as _get_query_analysis_service,
+    _get_query_service,
+    router as query_router,
+)
 from app.analysis.extraction import ExtractionService
 from app.analysis.llm_client import LLMClient
 from app.analysis.quality.ambiguity_detector import AmbiguityDetector
@@ -25,6 +30,10 @@ from app.analysis.quality.contradiction_detector import ContradictionDetector
 from app.analysis.quality.finding_verifier import FindingVerifier
 from app.analysis.quality.service import QualityAnalysisService
 from app.analysis.quality.suggestion_generator import SuggestionGenerator
+from app.analysis.query.context_builder import ContextBuilder
+from app.analysis.query.evidence_verifier import QueryEvidenceVerifier
+from app.analysis.query.response_parser import ResponseParser
+from app.analysis.query.service import QueryService
 from app.analysis.service import AnalysisService, AnalysisStorageService
 from app.analysis.type_inference import TypeInferenceService
 from app.analysis.verification import VerificationService
@@ -123,9 +132,25 @@ def create_app(
             lambda: analysis_storage_service
         )
 
+        # Query service dependencies
+        context_builder = ContextBuilder(llm_client=llm_client)
+        response_parser = ResponseParser()
+        evidence_verifier = QueryEvidenceVerifier()
+
+        query_service = QueryService(
+            llm_client=llm_client,
+            context_builder=context_builder,
+            response_parser=response_parser,
+            evidence_verifier=evidence_verifier,
+        )
+
+        app.dependency_overrides[_get_query_service] = lambda: query_service
+        app.dependency_overrides[_get_query_analysis_service] = lambda: analysis_service
+
     # --- Router registration ---
     app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
     app.include_router(analysis_router, prefix="/api/v1/documents", tags=["analysis"])
     app.include_router(quality_router, prefix="/api/v1/documents", tags=["quality"])
+    app.include_router(query_router, prefix="/api/v1/documents", tags=["query"])
 
     return app
