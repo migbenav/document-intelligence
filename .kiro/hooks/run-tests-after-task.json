@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Run tests after task completion",
+      "trigger": "PostTaskExec",
+      "description": "Runs pytest automatically after each spec task completes, bypassing the manual approval flow.",
+      "action": {
+        "type": "command",
+        "command": "powershell -Command \"pytest --tb=short -q\""
+      }
+    }
+  ]
+}

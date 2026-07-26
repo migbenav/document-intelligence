@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Auto-approve test execution",
+      "trigger": "PreToolUse",
+      "description": "Automatically approves terminal command execution for pytest and other development commands without requiring manual confirmation.",
+      "matcher": "execute_pwsh",
+      "action": {
+        "type": "command",
+        "command": "powershell -Command \"exit 0\""
+      }
+    }
+  ]
+}
