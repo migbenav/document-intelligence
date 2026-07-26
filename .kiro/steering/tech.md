@@ -26,7 +26,7 @@ inclusion: auto
 | Build tool | Vite | 5+ |
 | Estilos | Tailwind CSS | 3+ |
 | Componentes UI | shadcn/ui | latest |
-| Visualización relaciones | React Flow | latest |
+| Visualización estructura | React Flow | latest |
 | Estado | Zustand | latest |
 | Testing | Vitest | latest |
 
@@ -37,7 +37,7 @@ inclusion: auto
 | Base de datos | Supabase (PostgreSQL) | Free tier — cloud siempre |
 | Storage temporal | Supabase Storage o filesystem del server | Free tier |
 | LLM principal | Google Gemini 2.5 Flash | Free tier (500 req/día, 1M tokens/min) |
-| LLM secundario | Groq (Llama 3.3 70B) | Free tier (30 req/min) |
+| LLM ligero | Groq (Llama 3.3 70B) | Free tier (30 req/min) |
 | Deploy backend | Render | Free tier |
 | Deploy frontend | Vercel | Free tier |
 | CI/CD | GitHub Actions | Free (repo público) |
@@ -47,11 +47,16 @@ inclusion: auto
 
 | Tarea | Modelo asignado | Razón |
 |---|---|---|
-| Extracción completa del Knowledge Model | Gemini 2.5 Flash | Contexto 1M tokens, gratis, calidad alta |
-| Inferencia de tipo de documento | Groq Llama 3.3 70B | Tarea simple, velocidad alta |
-| Consulta por lenguaje natural (Q&A) | Gemini 2.5 Flash | Mismo contexto, coherente con KM |
-| Verificación de evidencia | Groq Llama 3.1 8B | Tarea ligera, alta disponibilidad |
-| Fallback general | Groq | Si Gemini tiene rate limit |
+| Análisis base (resumen + clasificación) | Groq Llama 3.3 70B (light) | Tarea corta, velocidad alta, cumple < 5s |
+| Análisis bajo demanda (índice, relaciones, preguntas, conclusiones) | Gemini 2.5 Flash (primary) | Contexto 1M tokens, calidad alta para análisis profundo |
+| Consulta por lenguaje natural (Q&A) | Gemini 2.5 Flash (primary) | Coherente con modelo guardado |
+| Fallback general | Configurable por usuario | Si el modelo asignado falla, auto-fallback al otro (si activado) |
+
+**Política de fallback:**
+- El usuario configura si el auto-fallback está activado o desactivado.
+- Si activado: fallo en modelo asignado → intento automático con el otro modelo → informar al usuario.
+- Si desactivado: fallo → informar error → ofrecer reintentar o cambiar modelo manualmente.
+- La preferencia es por sesión en el MVP.
 
 Toda comunicación con LLMs pasa por LiteLLM. Cambiar modelo = cambiar config, no código.
 
@@ -67,13 +72,22 @@ Toda comunicación con LLMs pasa por LiteLLM. Cambiar modelo = cambiar config, n
 
 Derivados de los ADR aprobados. Toda implementación debe respetar estos principios:
 
-### Modelo de conocimiento (ADR-002)
+### Análisis progresivo (ADR-007)
 
-- El Knowledge Model es una colección de elementos tipados con relaciones opcionales.
-- Taxonomía fija de 6 tipos: propósito, conceptos, actores, reglas, procesos, restricciones.
-- Vocabulario de relaciones fijo de 4 tipos: constrains, participates_in, depends_on, contradicts.
-- Cada elemento incluye un `source_ref` flexible (document_id, page, section, chunk_id, evidence).
-- Los tipos se representan como strings extensibles, no enums cerrados.
+- El objetivo del sistema NO es extraer entidades de un documento. Es ayudar al usuario a comprender el documento sin leerlo y guardar ese entendimiento.
+- El análisis se divide en dos niveles: **base** (automático, rápido, < 5s) y **bajo demanda** (el usuario elige qué ejecutar).
+- El análisis base combina procesamiento local (estadísticas, detección de estructura, título) con una llamada LLM corta (resumen + clasificación).
+- Cada análisis bajo demanda es independiente, se ejecuta por separado, y su resultado se guarda como capa acumulativa.
+- La estructura del documento se preserva como un **árbol jerárquico de bloques** con relaciones entre bloques.
+- La clasificación del documento adapta el comportamiento de las opciones disponibles, no las bloquea.
+- Si un análisis ya se ejecutó, no se re-ejecuta (salvo que el documento cambie).
+
+### Modelo de estructura documental (ADR-007)
+
+- El modelo central es `DocumentStructure`: ficha + árbol de estructura + análisis acumulativos.
+- Vocabulario de relaciones: `constrains`, `depends_on`, `complements`, `contradicts`.
+- Cada elemento tiene `source_ref` para trazabilidad (evidence).
+- IDs únicos referenciables para cada nodo del árbol.
 
 ### Ingesta desacoplada (ADR-003)
 
@@ -99,20 +113,13 @@ Derivados de los ADR aprobados. Toda implementación debe respetar estos princip
 - Solo se envía texto del documento y prompts del sistema. No metadata del usuario, cuentas ni historial.
 - Retención del documento original limitada a lo operativamente necesario para la sesión.
 
-### Análisis de calidad (ADR-006)
-
-- 4 tipos de documento: PRD, Technical Spec, Policy/Process, Generic.
-- Selección híbrida: inferencia automática + confirmación del usuario.
-- Esquemas fijos en MVP; estructura extensible para futuras versiones.
-- Generic soporta todas las capacidades excepto evaluación de completitud basada en esquema.
-
 ## Restricciones técnicas permanentes
 
 - No acoplar código a un proveedor de IA específico (todo pasa por LiteLLM).
 - No enviar metadata de usuario, información de cuenta ni historial al servicio de IA.
 - No almacenar el documento original más allá de la sesión operativa.
 - No asumir referencias basadas en líneas (los PDFs no tienen líneas estables).
-- No implementar Knowledge Graph completo ni motor de grafos.
+- No implementar extracción de entidades tipadas como mecanismo de comprensión (la comprensión es estructural y progresiva, no una lista de entidades categorizadas).
 - No implementar lógica multi-documento.
 - No implementar configuración dinámica de taxonomías o tipos de documentos.
 - No usar Docker para desarrollo ni despliegue en esta etapa.
@@ -126,4 +133,5 @@ Derivados de los ADR aprobados. Toda implementación debe respetar estos princip
 - #[[file:docs/decisions/ADR-004-reliability-trust-model.md]]
 - #[[file:docs/decisions/ADR-005-privacy-external-processing.md]]
 - #[[file:docs/decisions/ADR-006-document-type-schemas.md]]
+- #[[file:docs/decisions/ADR-007-structural-analysis-redesign.md]]
 - #[[file:docs/architecture/001-technology-stack.md]]
