@@ -1,6 +1,6 @@
 # ADR-002 — Modelo de representación del conocimiento (Knowledge Model)
 
-> Estado: **Accepted**
+> Estado: **Superseded partially by ADR-007**
 > Fecha: 2026-07-23
 > Aprobada: 2026-07-23
 > Depende de: ADR-001-mvp-scope.md (aprobada)

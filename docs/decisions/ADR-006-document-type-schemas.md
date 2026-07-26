@@ -1,6 +1,6 @@
 # ADR-006 — Document Type Schemas and Analysis Configuration
 
-> Estado: **Approved**
+> Estado: ***Superseded partially by ADR-007**
 > Fecha: 2026-07-23
 > Aprobada: 2026-07-23
 > Depende de: ADR-001, ADR-002, ADR-003, ADR-004, ADR-005 (todas aprobadas)
