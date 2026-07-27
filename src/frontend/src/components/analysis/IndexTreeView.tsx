@@ -9,6 +9,8 @@ import type { StructureNode, SourceRef } from '@/types/analysis';
 export interface IndexTreeViewProps {
   /** The top-level tree nodes to render. */
   tree: StructureNode[];
+  /** Optional document purpose summary (from IndexResult). */
+  documentPurpose?: string | null;
 }
 
 /**
@@ -17,7 +19,7 @@ export interface IndexTreeViewProps {
  *
  * Requirements: Req 8 (criterion 1), Req 9 (criterion 2)
  */
-export function IndexTreeView({ tree }: IndexTreeViewProps) {
+export function IndexTreeView({ tree, documentPurpose }: IndexTreeViewProps) {
   if (tree.length === 0) {
     return (
       <p className="text-sm text-muted-foreground italic" data-testid="index-tree-empty">
@@ -27,11 +29,23 @@ export function IndexTreeView({ tree }: IndexTreeViewProps) {
   }
 
   return (
-    <ul role="tree" aria-label="Document structure" data-testid="index-tree" className="space-y-1">
-      {tree.map((node) => (
-        <TreeNode key={node.id} node={node} level={1} />
-      ))}
-    </ul>
+    <div>
+      {/* Document purpose summary line */}
+      {documentPurpose && (
+        <p
+          className="text-sm text-muted-foreground mb-3 border-b border-border pb-2"
+          data-testid="index-tree-purpose"
+        >
+          <span className="font-medium text-foreground">Purpose:</span> {documentPurpose}
+        </p>
+      )}
+
+      <ul role="tree" aria-label="Document structure" data-testid="index-tree" className="space-y-1">
+        {tree.map((node) => (
+          <TreeNode key={node.id} node={node} level={1} />
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -45,7 +59,8 @@ interface TreeNodeProps {
 function TreeNode({ node, level }: TreeNodeProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasChildren = node.children.length > 0;
-  const hasExpandableContent = hasChildren || node.source_ref !== null;
+  const hasOriginalHeadings = (node.original_headings?.length ?? 0) > 0;
+  const hasExpandableContent = hasChildren || node.source_ref !== null || hasOriginalHeadings;
 
   const toggle = useCallback(() => {
     if (hasExpandableContent) {
@@ -124,6 +139,15 @@ function TreeNode({ node, level }: TreeNodeProps) {
                 {node.role}
               </Badge>
             )}
+            {/* Functional group label on level-1 nodes */}
+            {level === 1 && node.functional_group && (
+              <span
+                className="text-[10px] text-muted-foreground/70 italic truncate"
+                data-testid={`functional-group-${node.id}`}
+              >
+                {node.functional_group}
+              </span>
+            )}
           </div>
           {node.question_answered && (
             <p className="text-xs text-muted-foreground italic mt-0.5 truncate">
@@ -136,6 +160,21 @@ function TreeNode({ node, level }: TreeNodeProps) {
       {/* Expanded content */}
       {isExpanded && (
         <div className="ml-4" style={{ paddingLeft: `${(level - 1) * 1.25 + 0.5}rem` }}>
+          {/* Original headings detail */}
+          {hasOriginalHeadings && (
+            <div
+              className="mt-1 mb-1.5 rounded border border-border bg-muted/30 px-3 py-1.5 text-xs"
+              data-testid={`original-headings-${node.id}`}
+            >
+              <span className="font-medium text-muted-foreground">Original headings:</span>
+              <ul className="list-disc list-inside mt-0.5 text-muted-foreground">
+                {node.original_headings!.map((heading, i) => (
+                  <li key={i} className="truncate">{heading}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {/* Source reference display */}
           {node.source_ref && (
             <SourceRefInline sourceRef={node.source_ref} />

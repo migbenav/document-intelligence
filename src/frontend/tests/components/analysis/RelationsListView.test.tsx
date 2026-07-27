@@ -98,9 +98,9 @@ describe('RelationsListView', () => {
 
     it('shows type labels as headings', () => {
       renderWithProviders(<RelationsListView relations={mockRelations} />);
-      expect(screen.getByText('Constrains')).toBeInTheDocument();
-      expect(screen.getByText('Depends On')).toBeInTheDocument();
-      expect(screen.getByText('Complements')).toBeInTheDocument();
+      expect(screen.getByText('Constrains (v1)')).toBeInTheDocument();
+      expect(screen.getByText('Depends On (v1)')).toBeInTheDocument();
+      expect(screen.getByText('Complements (v1)')).toBeInTheDocument();
       expect(screen.getByText('Contradicts')).toBeInTheDocument();
     });
   });
@@ -109,8 +109,9 @@ describe('RelationsListView', () => {
     it('renders source → target path for each relation', () => {
       renderWithProviders(<RelationsListView relations={mockRelations} />);
       const paths = screen.getAllByTestId('relation-path');
-      expect(paths[0]).toHaveTextContent('Requirements');
-      expect(paths[0]).toHaveTextContent('Implementation');
+      // contradicts renders first (v2 type), then constrains, depends_on, complements (legacy)
+      expect(paths[0]).toHaveTextContent('Section 3.1');
+      expect(paths[0]).toHaveTextContent('Section 4.2');
     });
 
     it('renders description for each relation', () => {
@@ -190,7 +191,7 @@ describe('RelationsListView', () => {
 
     it('clicking group heading collapses the group', () => {
       renderWithProviders(<RelationsListView relations={mockRelations} />);
-      const constrainsButton = screen.getByRole('button', { name: /Constrains/i });
+      const constrainsButton = screen.getByRole('button', { name: /Constrains \(v1\)/i });
       fireEvent.click(constrainsButton);
 
       // The aria-expanded should now be false
@@ -199,7 +200,7 @@ describe('RelationsListView', () => {
 
     it('clicking collapsed group heading expands it again', () => {
       renderWithProviders(<RelationsListView relations={mockRelations} />);
-      const constrainsButton = screen.getByRole('button', { name: /Constrains/i });
+      const constrainsButton = screen.getByRole('button', { name: /Constrains \(v1\)/i });
       fireEvent.click(constrainsButton);
       fireEvent.click(constrainsButton);
 

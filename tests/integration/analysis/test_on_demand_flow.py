@@ -14,7 +14,7 @@ Requirements covered: Req 7 (criteria 1-9)
 import json
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import pytest_asyncio
@@ -334,6 +334,7 @@ def on_demand_service(fake_analysis_storage, fake_ingestion_storage, mock_llm_cl
         conclusions_analyzer=conclusions_analyzer,
         storage=fake_analysis_storage,
         ingestion_storage=fake_ingestion_storage,
+        card_storage=MagicMock(get_card=AsyncMock(return_value=None)),
     )
 
 
@@ -530,11 +531,11 @@ class TestPostTrigger502:
 
         assert resp.status_code == 502
         data = resp.json()
-        assert data["error"] == "analysis_failed"
+        assert data["error_code"] == "analysis_failed"
         assert "LLM service unavailable" in data["message"]
 
-    async def test_post_timeout_returns_502(self, client, mock_llm_client):
-        """POST returns 502 when the LLM call times out."""
+    async def test_post_timeout_returns_504(self, client, mock_llm_client):
+        """POST returns 504 when the LLM call times out."""
         import asyncio
 
         mock_llm_client.call.side_effect = asyncio.TimeoutError()
@@ -543,9 +544,73 @@ class TestPostTrigger502:
             f"/api/v1/documents/{DOC_ID}/analyses/build_index"
         )
 
-        assert resp.status_code == 502
+        assert resp.status_code == 504
         data = resp.json()
-        assert data["error"] == "analysis_failed"
+        assert data["error_code"] == "timeout"
+
+
+# ---------------------------------------------------------------------------
+# POST trigger: classified error responses (Req 5 criteria 2, 6)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+class TestPostTriggerClassifiedErrors:
+    """POST returns classified error codes for specific LLM failures."""
+
+    async def test_quota_exhausted_returns_429(self, client, mock_llm_client):
+        """POST returns 429 with error_code quota_exhausted on LLMQuotaExhaustedError."""
+        from app.analysis.llm_client import LLMQuotaExhaustedError
+
+        mock_llm_client.call.side_effect = LLMQuotaExhaustedError(
+            model_id="gemini/gemini-2.5-flash",
+            message="Quota exhausted for model gemini/gemini-2.5-flash.",
+        )
+
+        resp = await client.post(
+            f"/api/v1/documents/{DOC_ID}/analyses/build_index"
+        )
+
+        assert resp.status_code == 429
+        data = resp.json()
+        assert data["error_code"] == "quota_exhausted"
+        assert data["model_id"] == "gemini/gemini-2.5-flash"
+        assert "message" in data
+
+    async def test_auth_error_returns_401(self, client, mock_llm_client):
+        """POST returns 401 with error_code auth_error on LLMAuthenticationError."""
+        from app.analysis.llm_client import LLMAuthenticationError
+
+        mock_llm_client.call.side_effect = LLMAuthenticationError(
+            "Invalid API key for model"
+        )
+
+        resp = await client.post(
+            f"/api/v1/documents/{DOC_ID}/analyses/build_index"
+        )
+
+        assert resp.status_code == 401
+        data = resp.json()
+        assert data["error_code"] == "auth_error"
+        assert "message" in data
+
+    async def test_success_response_includes_model_fields(
+        self, client, mock_llm_client
+    ):
+        """POST 200 response includes requested_model and fallback_used."""
+        mock_llm_client.call.return_value = LLMResponse(
+            content=FAKE_INDEX_RESULT,
+            model_id="gemini/gemini-2.5-flash-preview-05-20",
+        )
+
+        resp = await client.post(
+            f"/api/v1/documents/{DOC_ID}/analyses/build_index"
+        )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "requested_model" in data
+        assert "fallback_used" in data
 
 
 # ---------------------------------------------------------------------------

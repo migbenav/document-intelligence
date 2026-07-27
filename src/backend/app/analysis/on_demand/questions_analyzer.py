@@ -13,10 +13,11 @@ import logging
 import re
 
 from app.analysis.llm_client import LLMClient, LLMResponse
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.models import QuestionsResult
-from app.analysis.on_demand.prompts.questions_answered import (
-    PROMPT_TEMPLATE,
+from app.analysis.on_demand.prompts.questions_answered_v2 import (
     PROMPT_VERSION,
+    format_prompt,
 )
 from app.analysis.on_demand.text_preparation import prepare_document_text
 from app.models.document import IntermediateRepresentation
@@ -60,19 +61,22 @@ class QuestionsAnalyzer:
         self,
         ir: IntermediateRepresentation,
         language: str,
+        classification: str = "generic",
         model_override: str | None = None,
         auto_fallback: bool = True,
-    ) -> QuestionsResult:
+    ) -> AnalyzerResponse:
         """Analyze document and produce a cascade of answered questions.
 
         Args:
             ir: The document's intermediate representation with ordered chunks.
             language: The response language for the LLM output (e.g., "es", "en").
+            classification: Document classification (e.g., "normative", "procedure").
+                Defaults to "generic". Used in v2 prompts (tasks 5-8).
             model_override: Optional model identifier to override the default.
             auto_fallback: Whether to allow automatic fallback on transient errors.
 
         Returns:
-            A QuestionsResult containing document_questions and section_questions.
+            An AnalyzerResponse wrapping the QuestionsResult with model metadata.
 
         Raises:
             QuestionsAnalysisError: On JSON parse failure or validation error.
@@ -83,8 +87,9 @@ class QuestionsAnalyzer:
         # 1. Build full document text from IR chunks with section markers
         document_text = prepare_document_text(ir)
 
-        # 2. Format the prompt with response language and document content
-        prompt = PROMPT_TEMPLATE.format(
+        # 2. Format the prompt with classification, response language, and document content
+        prompt = format_prompt(
+            classification=classification,
             response_language=language,
             document_text=document_text,
         )
@@ -152,8 +157,21 @@ class QuestionsAnalyzer:
             },
         )
 
-        # 7. Return validated QuestionsResult
-        return result
+        # 7. Determine the requested model for fallback detection
+        if model_override is not None and model_override != "default":
+            requested_model = model_override
+        else:
+            requested_model = self._llm_client.primary_model
+
+        # Detect whether fallback was used
+        fallback_used = response.model_id != requested_model
+
+        return AnalyzerResponse(
+            result=result,
+            model_id=response.model_id,
+            prompt_version=PROMPT_VERSION,
+            fallback_used=fallback_used,
+        )
 
     def _validate_cascade_levels(self, data: dict, document_id: str) -> None:
         """Validate that cascade structure has correct levels.

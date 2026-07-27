@@ -44,6 +44,7 @@ class LLMAnalysisResult:
     classification: DocumentClassification
     model_id: str
     prompt_version: str
+    confirmed_language: str | None = None
 
 
 class LLMAnalyzer:
@@ -163,6 +164,7 @@ class LLMAnalyzer:
             title=title,
             organization_type=organization_type.value,
             text_sample=text_sample,
+            detected_language=language,
         )
 
     def _build_text_sample(self, chunks: list[ContentChunkModel]) -> str:
@@ -181,10 +183,11 @@ class LLMAnalyzer:
     def _parse_response(self, content: str, model_id: str) -> LLMAnalysisResult | None:
         """Parse the LLM response as JSON and validate required fields.
 
-        Expects a JSON object with "summary" (string) and "classification"
-        (one of the valid DocumentClassification values).
+        Expects a JSON object with "summary" (string), "classification"
+        (one of the valid DocumentClassification values), and optionally
+        "language" (ISO 639-1 code).
 
-        Returns None if JSON is invalid or fields are missing/invalid.
+        Returns None if JSON is invalid or required fields are missing/invalid.
 
         Args:
             content: The raw text response from the LLM.
@@ -224,9 +227,24 @@ class LLMAnalyzer:
             )
             return None
 
+        # Parse optional language confirmation
+        confirmed_language: str | None = None
+        language_value = data.get("language")
+        if language_value and isinstance(language_value, str):
+            # Validate it looks like an ISO 639-1 code (2-3 lowercase letters)
+            cleaned = language_value.strip().lower()
+            if 2 <= len(cleaned) <= 3 and cleaned.isalpha():
+                confirmed_language = cleaned
+            else:
+                logger.info(
+                    "LLM returned invalid language code '%s', ignoring",
+                    language_value,
+                )
+
         return LLMAnalysisResult(
             summary=summary,
             classification=classification,
             model_id=model_id,
             prompt_version=PROMPT_VERSION,
+            confirmed_language=confirmed_language,
         )

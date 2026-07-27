@@ -5,14 +5,16 @@ Provides:
 - GET /{document_id}/analyses — status summary for all types (Req 7.7)
 - GET /{document_id}/analyses/{analysis_type} — retrieve stored result (Req 7.8)
 
-Requirements covered: Req 7 (criteria 1-9)
+Requirements covered: Req 7 (criteria 1-9), Req 5 (criteria 2, 6)
 """
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
+from app.analysis.llm_client import LLMAuthenticationError, LLMQuotaExhaustedError
 from app.analysis.on_demand.models import AnalysisRecord, AnalysisStatus, AnalysisType
 from app.analysis.on_demand.service import (
     DocumentIRNotAvailableError,
@@ -55,6 +57,9 @@ def _get_storage_service() -> StorageService:
     responses={
         404: {"description": "Document not found"},
         409: {"description": "Document IR not available"},
+        429: {"description": "LLM quota exhausted"},
+        401: {"description": "LLM authentication failed"},
+        504: {"description": "LLM timeout"},
         502: {"description": "LLM call failed"},
     },
 )
@@ -109,8 +114,50 @@ async def trigger_analysis(
                 "Document may not be ingested or processing is incomplete.",
             },
         )
+    except LLMQuotaExhaustedError as exc:
+        logger.warning(
+            "Quota exhausted for document '%s' type '%s': %s",
+            document_id,
+            analysis_type.value,
+            str(exc),
+        )
+        return JSONResponse(
+            status_code=429,
+            content={
+                "error_code": "quota_exhausted",
+                "model_id": exc.model_id,
+                "message": str(exc),
+            },
+        )
+    except asyncio.TimeoutError as exc:
+        logger.warning(
+            "Timeout for document '%s' type '%s'",
+            document_id,
+            analysis_type.value,
+        )
+        return JSONResponse(
+            status_code=504,
+            content={
+                "error_code": "timeout",
+                "message": f"Analysis timed out for document '{document_id}'.",
+            },
+        )
+    except LLMAuthenticationError as exc:
+        logger.error(
+            "Authentication error for document '%s' type '%s': %s",
+            document_id,
+            analysis_type.value,
+            str(exc),
+        )
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error_code": "auth_error",
+                "message": str(exc),
+            },
+        )
     except Exception as exc:
-        # LLM failures, timeouts, analyzer errors → 502
+        # Other LLM failures, analyzer errors → 502
         logger.error(
             "Analysis failed for document '%s' type '%s': %s",
             document_id,
@@ -121,7 +168,7 @@ async def trigger_analysis(
         return JSONResponse(
             status_code=502,
             content={
-                "error": "analysis_failed",
+                "error_code": "analysis_failed",
                 "message": f"Analysis failed: {str(exc)}",
             },
         )

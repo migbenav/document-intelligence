@@ -18,6 +18,7 @@ from app.analysis.on_demand.conclusions_analyzer import (
     ALLOWED_CATEGORIES,
     ConclusionsAnalyzer,
 )
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.models import ConclusionsResult
 from app.models.document import (
     ContentChunkModel,
@@ -75,14 +76,16 @@ def sample_ir():
 
 @pytest.fixture
 def valid_conclusions_response():
-    """A valid JSON response representing ConclusionsResult."""
+    """A valid JSON response representing ConclusionsResult (v2 format)."""
     return {
+        "domains_identified": ["convivencia", "procedimientos"],
         "observations": [
             {
-                "category": "reordering",
+                "category": "sequence_issue",
                 "description": "La sección de Definiciones aparece después de los Procedimientos que usan esos términos.",
                 "suggestion": "Considere mover la sección Definiciones antes del capítulo de Procedimientos.",
                 "section_ref": "Definiciones",
+                "domain": "procedimientos",
                 "source_ref": {
                     "chunk_ids": ["c3"],
                     "text_excerpt": "Las definiciones de términos usados en este documento.",
@@ -90,10 +93,11 @@ def valid_conclusions_response():
                 },
             },
             {
-                "category": "coherence",
+                "category": "purpose_mismatch",
                 "description": "Section mixes normative and procedural content.",
                 "suggestion": "Separar el contenido normativo del procedimental en secciones distintas.",
                 "section_ref": "Procedimientos",
+                "domain": "procedimientos",
                 "source_ref": {
                     "chunk_ids": ["c2"],
                     "text_excerpt": "Los procedimientos de compra se rigen por las siguientes reglas.",
@@ -101,10 +105,11 @@ def valid_conclusions_response():
                 },
             },
             {
-                "category": "missing",
-                "description": "No scope section found for a normative document.",
+                "category": "misplaced_content",
+                "description": "Content about definitions is placed after the sections that use those terms.",
                 "suggestion": "Agregar una sección de Alcance al inicio del documento.",
                 "section_ref": None,
+                "domain": None,
                 "source_ref": {
                     "chunk_ids": ["c1"],
                     "text_excerpt": "Este reglamento establece las normas de convivencia.",
@@ -130,17 +135,20 @@ class TestConclusionsAnalyzerSuccess:
             content=json.dumps(valid_conclusions_response),
             model_id="gemini/gemini-2.5-flash",
         )
+        mock_llm_client.primary_model = "gemini/gemini-2.5-flash"
 
         analyzer = ConclusionsAnalyzer(mock_llm_client)
-        result = await analyzer.analyze(
+        response = await analyzer.analyze(
             sample_ir, language="es", document_language="es"
         )
 
+        result = response.result
         assert isinstance(result, ConclusionsResult)
         assert len(result.observations) == 3
-        assert result.observations[0].category == "reordering"
-        assert result.observations[1].category == "coherence"
-        assert result.observations[2].category == "missing"
+        assert result.observations[0].category == "sequence_issue"
+        assert result.observations[1].category == "purpose_mismatch"
+        assert result.observations[2].category == "misplaced_content"
+        assert result.domains_identified == ["convivencia", "procedimientos"]
 
     @pytest.mark.asyncio
     async def test_strips_json_fences(
@@ -152,12 +160,14 @@ class TestConclusionsAnalyzerSuccess:
             content=fenced_content,
             model_id="gemini/gemini-2.5-flash",
         )
+        mock_llm_client.primary_model = "gemini/gemini-2.5-flash"
 
         analyzer = ConclusionsAnalyzer(mock_llm_client)
-        result = await analyzer.analyze(
+        response = await analyzer.analyze(
             sample_ir, language="en", document_language="es"
         )
 
+        result = response.result
         assert isinstance(result, ConclusionsResult)
         assert len(result.observations) == 3
 
@@ -170,6 +180,7 @@ class TestConclusionsAnalyzerSuccess:
             content=json.dumps(valid_conclusions_response),
             model_id="gemini/gemini-2.5-flash",
         )
+        mock_llm_client.primary_model = "gemini/gemini-2.5-flash"
 
         analyzer = ConclusionsAnalyzer(mock_llm_client)
         await analyzer.analyze(sample_ir, language="es", document_language="es")
@@ -185,6 +196,8 @@ class TestConclusionsAnalyzerSuccess:
         assert "[Section: Introducción]" in prompt
         assert "[Section: Procedimientos]" in prompt
         assert "[Section: Definiciones]" in prompt
+        # Verify classification is included (defaults to "generic")
+        assert "generic" in prompt
 
     @pytest.mark.asyncio
     async def test_prompt_includes_both_languages(
@@ -195,6 +208,7 @@ class TestConclusionsAnalyzerSuccess:
             content=json.dumps(valid_conclusions_response),
             model_id="gemini/gemini-2.5-flash",
         )
+        mock_llm_client.primary_model = "gemini/gemini-2.5-flash"
 
         analyzer = ConclusionsAnalyzer(mock_llm_client)
         await analyzer.analyze(
@@ -217,6 +231,7 @@ class TestConclusionsAnalyzerSuccess:
             content=json.dumps(valid_conclusions_response),
             model_id="gemini/gemini-2.5-flash",
         )
+        mock_llm_client.primary_model = "gemini/gemini-2.5-flash"
 
         analyzer = ConclusionsAnalyzer(mock_llm_client)
         await analyzer.analyze(
@@ -278,10 +293,10 @@ class TestConclusionsAnalyzerErrors:
     async def test_timeout_raises_timeout_error(
         self, mock_llm_client, sample_ir
     ):
-        """Analyzer raises TimeoutError when LLM exceeds 30s."""
+        """Analyzer raises TimeoutError when LLM exceeds timeout."""
 
         async def slow_call(*args, **kwargs):
-            await asyncio.sleep(60)
+            await asyncio.sleep(120)
             return LLMResponse(content="{}", model_id="test")
 
         mock_llm_client.call = slow_call
@@ -298,17 +313,19 @@ class TestConclusionsAnalyzerCategoryValidation:
     """Tests for category validation logic."""
 
     @pytest.mark.asyncio
-    async def test_invalid_category_defaults_to_coherence(
+    async def test_invalid_category_defaults_to_purpose_mismatch(
         self, mock_llm_client, sample_ir
     ):
-        """Observations with invalid categories default to 'coherence'."""
+        """Observations with invalid categories default to 'purpose_mismatch'."""
         data = {
+            "domains_identified": [],
             "observations": [
                 {
                     "category": "style",  # Invalid category
                     "description": "Some observation",
                     "suggestion": "Some suggestion",
                     "section_ref": None,
+                    "domain": None,
                     "source_ref": {
                         "chunk_ids": ["c1"],
                         "text_excerpt": "Some text",
@@ -321,18 +338,26 @@ class TestConclusionsAnalyzerCategoryValidation:
             content=json.dumps(data),
             model_id="gemini/gemini-2.5-flash",
         )
+        mock_llm_client.primary_model = "gemini/gemini-2.5-flash"
 
         analyzer = ConclusionsAnalyzer(mock_llm_client)
-        result = await analyzer.analyze(
+        response = await analyzer.analyze(
             sample_ir, language="es", document_language="es"
         )
 
-        # Invalid category "style" should be corrected to "coherence"
-        assert result.observations[0].category == "coherence"
+        # Invalid category "style" should be corrected to "purpose_mismatch"
+        assert response.result.observations[0].category == "purpose_mismatch"
 
-    def test_allowed_categories_matches_spec(self):
-        """ALLOWED_CATEGORIES constant matches the spec's five categories."""
-        expected = {"coherence", "reordering", "duplication", "orphan", "missing"}
+    def test_allowed_categories_matches_v2_spec(self):
+        """ALLOWED_CATEGORIES constant matches the v2 spec's six categories."""
+        expected = {
+            "purpose_mismatch",
+            "misplaced_content",
+            "title_mismatch",
+            "sequence_issue",
+            "duplication",
+            "contradiction",
+        }
         assert ALLOWED_CATEGORIES == expected
 
     @pytest.mark.asyncio
@@ -341,12 +366,14 @@ class TestConclusionsAnalyzerCategoryValidation:
     ):
         """All valid categories pass through without modification."""
         data = {
+            "domains_identified": ["test"],
             "observations": [
                 {
                     "category": category,
                     "description": f"Observation about {category}",
                     "suggestion": f"Fix {category}",
                     "section_ref": None,
+                    "domain": "test",
                     "source_ref": {
                         "chunk_ids": ["c1"],
                         "text_excerpt": "text",
@@ -360,19 +387,20 @@ class TestConclusionsAnalyzerCategoryValidation:
             content=json.dumps(data),
             model_id="gemini/gemini-2.5-flash",
         )
+        mock_llm_client.primary_model = "gemini/gemini-2.5-flash"
 
         analyzer = ConclusionsAnalyzer(mock_llm_client)
-        result = await analyzer.analyze(
+        response = await analyzer.analyze(
             sample_ir, language="en", document_language="en"
         )
 
-        result_categories = {obs.category for obs in result.observations}
+        result_categories = {obs.category for obs in response.result.observations}
         assert result_categories == ALLOWED_CATEGORIES
 
 
 class TestConclusionsAnalyzerPromptVersion:
     """Tests for prompt version tracking."""
 
-    def test_prompt_version_is_conclusions_v1(self):
-        """ConclusionsAnalyzer.PROMPT_VERSION matches the prompt template version."""
-        assert ConclusionsAnalyzer.PROMPT_VERSION == "conclusions-v1"
+    def test_prompt_version_is_conclusions_v2(self):
+        """ConclusionsAnalyzer.PROMPT_VERSION matches the v2 prompt template version."""
+        assert ConclusionsAnalyzer.PROMPT_VERSION == "conclusions-v2"

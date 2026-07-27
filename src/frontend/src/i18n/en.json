@@ -118,8 +118,12 @@
         "defaultDesc": "Uses the optimal model for each task",
         "gemini": "Gemini 2.5 Flash",
         "geminiDesc": "Primary — deep analysis",
+        "geminiPro": "Gemini 2.5 Pro",
+        "geminiProDesc": "Higher quality, slower. For complex documents.",
         "groq": "Groq Llama 3.3 70B",
-        "groqDesc": "Fast — base analysis"
+        "groqDesc": "Fast — base analysis",
+        "groqMaverick": "Groq Llama 4 Maverick",
+        "groqMaverickDesc": "Speed/quality balance, 128K tokens."
       }
     },
     "fallback": {
@@ -204,14 +208,29 @@
       "retry": "Retry"
     },
     "outdatedBanner": "Results may not reflect the current document.",
+    "questions": {
+      "coherenceWarning": "Coherence note"
+    },
+    "error": {
+      "title": "Analysis Error",
+      "quotaExhausted": "Quota exhausted for {model}. Select a different model or wait.",
+      "timeout": "Analysis took too long. Try a faster model.",
+      "authError": "Credential error for the model. Check your configuration.",
+      "analysisFailed": "Analysis failed. Please try again."
+    },
     "relations": {
       "title": "Section Relations",
       "empty": "No relations were identified between sections.",
+      "domain": "Domain: {domain}",
       "types": {
-        "constrains": "Constrains",
-        "depends_on": "Depends On",
-        "complements": "Complements",
-        "contradicts": "Contradicts"
+        "enables": "Enables",
+        "restricts": "Restricts",
+        "requires": "Requires",
+        "implements": "Implements",
+        "contradicts": "Contradicts",
+        "constrains": "Constrains (v1)",
+        "depends_on": "Depends On (v1)",
+        "complements": "Complements (v1)"
       },
       "sourceRef": {
         "show": "Show source",
@@ -228,10 +247,16 @@
       "showSource": "Show source",
       "hideSource": "Hide source",
       "sectionContext": "Section: {section}",
+      "generalObservations": "General Observations",
       "categories": {
+        "purpose_mismatch": "Purpose Mismatch",
+        "misplaced_content": "Misplaced Content",
+        "title_mismatch": "Title Mismatch",
+        "sequence_issue": "Sequence Issue",
+        "duplication": "Duplication",
+        "contradiction": "Contradiction",
         "coherence": "Coherence",
         "reordering": "Reordering",
-        "duplication": "Duplication",
         "orphan": "Orphan Sections",
         "missing": "Missing Elements"
       }

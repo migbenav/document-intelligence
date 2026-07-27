@@ -155,7 +155,9 @@ class TestRunBaseAnalysis:
         )
 
         mock_storage.get_ir.assert_called_once_with("doc-789")
-        mock_service.analyze.assert_called_once_with("doc-789", mock_ir)
+        mock_service.analyze.assert_called_once_with(
+            "doc-789", mock_ir, language='es', model_override=None, auto_fallback=True
+        )
 
     async def test_ir_not_available_logs_warning(self):
         """When IR is not available, logs a warning and returns gracefully."""
@@ -188,7 +190,9 @@ class TestRunBaseAnalysis:
             base_analysis_service=mock_service,
         )
 
-        mock_service.analyze.assert_called_once_with("doc-error", mock_ir)
+        mock_service.analyze.assert_called_once_with(
+            "doc-error", mock_ir, language='es', model_override=None, auto_fallback=True
+        )
 
     async def test_storage_failure_does_not_propagate(self):
         """If storage.get_ir raises, it is caught and does not propagate."""

@@ -206,6 +206,7 @@ def create_app(
             conclusions_analyzer=conclusions_analyzer,
             storage=on_demand_analysis_storage,
             ingestion_storage=storage_service,
+            card_storage=base_analysis_storage,
         )
 
         app.dependency_overrides[_get_on_demand_analysis_service] = (

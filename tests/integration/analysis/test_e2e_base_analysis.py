@@ -327,7 +327,7 @@ class TestE2EBaseAnalysisSuccess:
         assert "normas de convivencia" in card_data["summary"]
         assert card_data["classification"] == "normative"
         assert card_data["model_id"] == "groq/llama-3.3-70b-versatile"
-        assert card_data["prompt_version"] == "base-analysis-v1"
+        assert card_data["prompt_version"] == "base-analysis-v2"
 
         # Local processing fields are present
         assert card_data["title"] == "Disposiciones Generales"

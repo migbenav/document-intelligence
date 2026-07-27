@@ -684,3 +684,115 @@ class TestAnalyzeOutdatedPropagation:
         card = await service_without_od.analyze("doc-001", ir)
 
         assert card.status == "completed"
+
+
+# --- Tests: Language Confirmation Update (Req 7 criteria 3, 4) ---
+
+
+class TestLanguageConfirmation:
+    """Tests for LLM language confirmation updating file_metadata.language."""
+
+    async def test_language_updated_when_llm_confirms_different_language(self):
+        """When LLM returns a different language, file_metadata.language is updated."""
+        local_result = _make_local_result()
+        assert local_result.file_metadata.language == "es"
+
+        # LLM says the document is actually Portuguese
+        llm_result = LLMAnalysisResult(
+            summary="Um documento sobre regulamentos.",
+            classification=DocumentClassification.NORMATIVE,
+            model_id="groq/llama-3.3-70b-versatile",
+            prompt_version="base-analysis-v2",
+            confirmed_language="pt",
+        )
+
+        local_analyzer = MagicMock()
+        local_analyzer.analyze = MagicMock(return_value=local_result)
+
+        llm_analyzer = MagicMock()
+        llm_analyzer.analyze = AsyncMock(return_value=llm_result)
+
+        storage = MagicMock()
+        storage.get_card = AsyncMock(return_value=None)
+        storage.upsert_card = AsyncMock()
+
+        service = BaseAnalysisService(
+            local_analyzer=local_analyzer,
+            llm_analyzer=llm_analyzer,
+            storage=storage,
+        )
+
+        ir = _make_ir()
+        card = await service.analyze("doc-001", ir)
+
+        assert card.status == "completed"
+        assert card.file_metadata.language == "pt"
+
+    async def test_language_unchanged_when_llm_confirms_same_language(self):
+        """When LLM confirms same language as detected, file_metadata.language stays the same."""
+        local_result = _make_local_result()
+        assert local_result.file_metadata.language == "es"
+
+        llm_result = LLMAnalysisResult(
+            summary="Un documento normativo.",
+            classification=DocumentClassification.NORMATIVE,
+            model_id="groq/llama-3.3-70b-versatile",
+            prompt_version="base-analysis-v2",
+            confirmed_language="es",
+        )
+
+        local_analyzer = MagicMock()
+        local_analyzer.analyze = MagicMock(return_value=local_result)
+
+        llm_analyzer = MagicMock()
+        llm_analyzer.analyze = AsyncMock(return_value=llm_result)
+
+        storage = MagicMock()
+        storage.get_card = AsyncMock(return_value=None)
+        storage.upsert_card = AsyncMock()
+
+        service = BaseAnalysisService(
+            local_analyzer=local_analyzer,
+            llm_analyzer=llm_analyzer,
+            storage=storage,
+        )
+
+        ir = _make_ir()
+        card = await service.analyze("doc-001", ir)
+
+        assert card.status == "completed"
+        assert card.file_metadata.language == "es"
+
+    async def test_language_unchanged_when_llm_returns_no_language(self):
+        """When LLM returns no language confirmation, file_metadata.language stays as detected."""
+        local_result = _make_local_result()
+
+        llm_result = LLMAnalysisResult(
+            summary="Un documento normativo.",
+            classification=DocumentClassification.NORMATIVE,
+            model_id="groq/llama-3.3-70b-versatile",
+            prompt_version="base-analysis-v2",
+            confirmed_language=None,
+        )
+
+        local_analyzer = MagicMock()
+        local_analyzer.analyze = MagicMock(return_value=local_result)
+
+        llm_analyzer = MagicMock()
+        llm_analyzer.analyze = AsyncMock(return_value=llm_result)
+
+        storage = MagicMock()
+        storage.get_card = AsyncMock(return_value=None)
+        storage.upsert_card = AsyncMock()
+
+        service = BaseAnalysisService(
+            local_analyzer=local_analyzer,
+            llm_analyzer=llm_analyzer,
+            storage=storage,
+        )
+
+        ir = _make_ir()
+        card = await service.analyze("doc-001", ir)
+
+        assert card.status == "completed"
+        assert card.file_metadata.language == "es"

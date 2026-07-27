@@ -1912,7 +1912,7 @@ class TestProperty11ControlledTemperature:
         # Mock LLM client — capture the temperature kwarg from all calls
         captured_temperatures = []
 
-        async def mock_call(prompt, *, model_tier="primary", temperature=0.1):
+        async def mock_call(prompt, *, model_tier="primary", temperature=0.1, model_override=None, auto_fallback=True):
             captured_temperatures.append(temperature)
             # Return a valid scoring response for context builder call
             if "score" in prompt.lower() or "relevance" in prompt.lower():
@@ -2043,7 +2043,7 @@ class TestProperty11ControlledTemperature:
         # Mock LLM client — capture the temperature kwarg
         captured_temperatures = []
 
-        async def mock_call(prompt, *, model_tier="primary", temperature=0.1):
+        async def mock_call(prompt, *, model_tier="primary", temperature=0.1, model_override=None, auto_fallback=True):
             captured_temperatures.append(temperature)
             if "score" in prompt.lower() or "relevance" in prompt.lower():
                 return LLMResponse(

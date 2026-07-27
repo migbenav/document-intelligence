@@ -13,16 +13,24 @@ import json
 import logging
 
 from app.analysis.llm_client import LLMClient
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.models import ConclusionsResult
-from app.analysis.on_demand.prompts.conclusions import PROMPT_TEMPLATE, PROMPT_VERSION
+from app.analysis.on_demand.prompts.conclusions_v2 import PROMPT_TEMPLATE, PROMPT_VERSION
 from app.analysis.on_demand.text_preparation import prepare_document_text
 from app.models.document import IntermediateRepresentation
 
 logger = logging.getLogger(__name__)
 
-# Allowed observation categories per the prompt and model definitions
+# Allowed observation categories per the v2 prompt and model definitions
 ALLOWED_CATEGORIES = frozenset(
-    {"coherence", "reordering", "duplication", "orphan", "missing"}
+    {
+        "purpose_mismatch",
+        "misplaced_content",
+        "title_mismatch",
+        "sequence_issue",
+        "duplication",
+        "contradiction",
+    }
 )
 
 
@@ -45,20 +53,23 @@ class ConclusionsAnalyzer:
         ir: IntermediateRepresentation,
         language: str,
         document_language: str,
+        classification: str = "generic",
         model_override: str | None = None,
         auto_fallback: bool = True,
-    ) -> ConclusionsResult:
+    ) -> AnalyzerResponse:
         """Run the Conclusions & Recommendations analysis on the full document.
 
         Args:
             ir: The document's IntermediateRepresentation with all chunks.
             language: The user's ui_language for descriptions (e.g., "es", "en").
             document_language: The document's own language for suggestions.
+            classification: Document classification (e.g., "normative", "procedure").
+                Defaults to "generic". Used in v2 prompts (tasks 5-8).
             model_override: Optional model identifier to override the default.
             auto_fallback: Whether to allow automatic fallback on transient errors.
 
         Returns:
-            ConclusionsResult with validated structural observations.
+            An AnalyzerResponse wrapping the ConclusionsResult with model metadata.
 
         Raises:
             asyncio.TimeoutError: If the LLM call exceeds the 30s timeout.
@@ -67,6 +78,7 @@ class ConclusionsAnalyzer:
         document_text = prepare_document_text(ir)
 
         prompt = PROMPT_TEMPLATE.format(
+            classification=classification,
             response_language=language,
             document_language=document_language,
             document_text=document_text,
@@ -114,7 +126,7 @@ class ConclusionsAnalyzer:
                         "Invalid category in conclusions observation, removing",
                         extra={"category": category},
                     )
-                    obs["category"] = "coherence"  # Default to coherence for invalid
+                    obs["category"] = "purpose_mismatch"  # Default to purpose_mismatch for invalid
 
         # Validate with Pydantic model
         try:
@@ -134,4 +146,18 @@ class ConclusionsAnalyzer:
             },
         )
 
-        return result
+        # Determine the requested model for fallback detection
+        if model_override is not None and model_override != "default":
+            requested_model = model_override
+        else:
+            requested_model = self._llm_client.primary_model
+
+        # Detect whether fallback was used
+        fallback_used = llm_response.model_id != requested_model
+
+        return AnalyzerResponse(
+            result=result,
+            model_id=llm_response.model_id,
+            prompt_version=PROMPT_VERSION,
+            fallback_used=fallback_used,
+        )

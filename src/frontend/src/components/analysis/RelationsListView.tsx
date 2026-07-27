@@ -9,8 +9,16 @@ export interface RelationsListViewProps {
   relations: SectionRelation[];
 }
 
-/** The four relation types in display order. */
-const RELATION_TYPES = ['constrains', 'depends_on', 'complements', 'contradicts'] as const;
+/** v2 relation types in display order. */
+const RELATION_TYPES_V2 = ['enables', 'restricts', 'requires', 'implements', 'contradicts'] as const;
+
+/** Legacy v1 relation types (kept for backward compat). */
+const RELATION_TYPES_LEGACY = ['constrains', 'depends_on', 'complements'] as const;
+
+/** All recognized relation types (v2 first, then legacy). */
+const ALL_RELATION_TYPES = [...RELATION_TYPES_V2, ...RELATION_TYPES_LEGACY] as const;
+
+type RelationType = (typeof ALL_RELATION_TYPES)[number];
 
 /**
  * RelationsListView — displays section relations grouped by type.
@@ -23,16 +31,16 @@ export function RelationsListView({ relations }: RelationsListViewProps) {
   const { t } = useTranslation();
 
   // Group relations by type
-  const grouped = RELATION_TYPES.reduce(
+  const grouped = ALL_RELATION_TYPES.reduce(
     (acc, type) => {
       acc[type] = relations.filter((r) => r.type === type);
       return acc;
     },
-    {} as Record<(typeof RELATION_TYPES)[number], SectionRelation[]>,
+    {} as Record<RelationType, SectionRelation[]>,
   );
 
   // Only render groups that have relations
-  const nonEmptyTypes = RELATION_TYPES.filter((type) => grouped[type].length > 0);
+  const nonEmptyTypes = ALL_RELATION_TYPES.filter((type) => grouped[type].length > 0);
 
   if (relations.length === 0) {
     return (
@@ -62,7 +70,7 @@ export function RelationsListView({ relations }: RelationsListViewProps) {
 // --- Relation Group (collapsible by type) ---
 
 interface RelationGroupProps {
-  type: (typeof RELATION_TYPES)[number];
+  type: RelationType;
   relations: SectionRelation[];
 }
 
@@ -123,6 +131,8 @@ interface RelationCardProps {
 }
 
 function RelationCard({ relation }: RelationCardProps) {
+  const { t } = useTranslation();
+
   return (
     <Card data-testid="relation-card">
       <CardContent className="p-3 space-y-1.5">
@@ -135,6 +145,11 @@ function RelationCard({ relation }: RelationCardProps) {
         <p className="text-xs text-muted-foreground" data-testid="relation-description">
           {relation.description}
         </p>
+        {relation.domain && (
+          <p className="text-xs text-muted-foreground italic" data-testid="relation-domain">
+            {t('analysis.relations.domain', { domain: relation.domain })}
+          </p>
+        )}
         {relation.source_ref && (
           <SourceRefExpandable sourceRef={relation.source_ref} />
         )}

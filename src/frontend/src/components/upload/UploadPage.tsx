@@ -13,6 +13,7 @@ import { ErrorDisplay } from './ErrorDisplay';
 import { DocumentCardSection } from '@/components/document-card/DocumentCardSection';
 import { OptionsPanel } from '@/components/analysis/OptionsPanel';
 import { AnalysisResultView } from '@/components/analysis/AnalysisResultView';
+import { AnalysisErrorAlert } from '@/components/analysis/AnalysisErrorAlert';
 import type { AnalysisType, AnalysisStatus } from '@/types/analysis';
 
 export function UploadPage() {
@@ -25,8 +26,10 @@ export function UploadPage() {
 
   const activeAnalysis = useAnalysisStore((s) => s.activeAnalysis);
   const results = useAnalysisStore((s) => s.results);
+  const modelInfo = useAnalysisStore((s) => s.modelInfo);
   const statuses = useAnalysisStore((s) => s.statuses);
   const triggerAnalysis = useAnalysisStore((s) => s.triggerAnalysis);
+  const analysisError = useAnalysisStore((s) => s.error);
 
   const showUploadZone =
     step === 'idle' ||
@@ -99,11 +102,15 @@ export function UploadPage() {
         />
       )}
 
+      {showDocumentCard && analysisError && <AnalysisErrorAlert />}
+
       {showDocumentCard && displayedAnalysisType && displayedResult != null && (
         <AnalysisResultView
           analysisType={displayedAnalysisType}
           result={displayedResult}
           status={displayedStatus}
+          modelId={displayedAnalysisType ? modelInfo[displayedAnalysisType]?.model_id ?? null : null}
+          fallbackUsed={displayedAnalysisType ? modelInfo[displayedAnalysisType]?.fallback_used ?? false : false}
           onReanalyze={handleReanalyze}
         />
       )}

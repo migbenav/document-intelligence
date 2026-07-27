@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Default model configuration (Decision 1 from design.md)
 DEFAULT_PRIMARY_MODEL = "gemini/gemini-2.5-flash"
 DEFAULT_LIGHT_MODEL = "gemini/gemini-2.5-flash"
-DEFAULT_FALLBACK_MODEL = "gemini/gemini-2.5-flash"
+DEFAULT_FALLBACK_MODEL = "groq/llama-3.3-70b-versatile"
 
 
 class ConfigurationError(Exception):
@@ -36,6 +36,14 @@ class LLMAuthenticationError(Exception):
     """Raised on LLM authentication/credential errors."""
 
     pass
+
+
+class LLMQuotaExhaustedError(Exception):
+    """Raised when LLM returns 429 / quota exhausted."""
+
+    def __init__(self, model_id: str, message: str):
+        self.model_id = model_id
+        super().__init__(message)
 
 
 @dataclass
@@ -112,6 +120,52 @@ class LLMClient:
             # Actual calls will fail if litellm is not available
             self._acompletion = None  # type: ignore
 
+    def _get_fallback_for(self, model_id: str) -> str:
+        """Determine the cross-provider fallback model for the given model.
+
+        When a user-selected model fails, we fall back to the opposite provider:
+        - Gemini model fails → fallback to Groq default
+        - Groq model fails → fallback to Gemini default
+        - Unknown prefix → fallback to the configured DEFAULT_FALLBACK_MODEL
+
+        Args:
+            model_id: The model identifier that failed (e.g. "gemini/gemini-2.5-flash").
+
+        Returns:
+            The fallback model identifier from the opposite provider.
+        """
+        if model_id.startswith("gemini/"):
+            # Gemini failed → use Groq as fallback
+            return "groq/llama-3.3-70b-versatile"
+        elif model_id.startswith("groq/"):
+            # Groq failed → use Gemini as fallback
+            return DEFAULT_PRIMARY_MODEL
+        else:
+            # Unknown provider → use the configured fallback
+            return self.fallback_model
+
+    def _is_quota_error(self, error: BaseException) -> bool:
+        """Check if an error is specifically a quota/rate-limit exhaustion.
+
+        Quota errors are identified by:
+        - Being an instance of litellm's RateLimitError
+        - Error message containing "429", "quota", or "rate_limit"
+
+        These errors should NOT trigger fallback — the user must choose a different model.
+        """
+        # Check by type: litellm RateLimitError specifically
+        try:
+            from litellm.exceptions import RateLimitError
+
+            if isinstance(error, RateLimitError):
+                return True
+        except ImportError:
+            pass
+
+        # Check by error message keywords
+        error_str = str(error).lower()
+        return any(keyword in error_str for keyword in ("429", "quota", "rate_limit"))
+
     async def call(
         self,
         prompt: str,
@@ -178,6 +232,18 @@ class LLMClient:
                 )
                 raise LLMAuthenticationError(str(e)) from e
 
+            # Quota errors: raise immediately, no fallback (Req 5 criterion 2)
+            # Must be checked BEFORE generic transient error handling
+            if self._is_quota_error(e):
+                logger.warning(
+                    "Quota exhausted — not attempting fallback, user should choose different model",
+                    extra={"model_id": target_model, "model_tier": model_tier},
+                )
+                raise LLMQuotaExhaustedError(
+                    model_id=target_model,
+                    message=f"Quota exhausted for model {target_model}. {e}",
+                ) from e
+
             # Transient errors: attempt fallback only if auto_fallback is True (Req 1.3)
             if self._transient_error_types and isinstance(e, self._transient_error_types):
                 if not auto_fallback:
@@ -203,30 +269,33 @@ class LLMClient:
                     },
                 )
 
+                # Use cross-provider fallback: Gemini→Groq, Groq→Gemini
+                fallback = self._get_fallback_for(target_model)
+
                 try:
                     content = await self._make_call(
-                        self.fallback_model, prompt, temperature
+                        fallback, prompt, temperature
                     )
                     logger.info(
                         "Fallback call successful",
                         extra={
-                            "model_id": self.fallback_model,
+                            "model_id": fallback,
                             "original_model": target_model,
                         },
                     )
-                    return LLMResponse(content=content, model_id=self.fallback_model)
+                    return LLMResponse(content=content, model_id=fallback)
 
                 except BaseException as fallback_error:
                     # Both primary and fallback failed — raise to caller (Req 1.7)
                     logger.error(
                         "Fallback model also failed",
                         extra={
-                            "fallback_model": self.fallback_model,
+                            "fallback_model": fallback,
                             "fallback_error_type": type(fallback_error).__name__,
                         },
                     )
                     raise LLMTransientError(
-                        f"Both primary ({target_model}) and fallback ({self.fallback_model}) failed. "
+                        f"Both primary ({target_model}) and fallback ({fallback}) failed. "
                         f"Last error: {fallback_error}"
                     ) from fallback_error
 

@@ -12,6 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.models import (
     AnalysisRecord,
     AnalysisStatus,
@@ -91,7 +92,12 @@ def mock_index_analyzer():
     analyzer = MagicMock()
     analyzer.prompt_version = "build-index-v1"
     analyzer.analyze = AsyncMock(
-        return_value=IndexResult(tree=[])
+        return_value=AnalyzerResponse(
+            result=IndexResult(tree=[]),
+            model_id="gemini/gemini-2.5-flash",
+            prompt_version="build-index-v1",
+            fallback_used=False,
+        )
     )
     return analyzer
 
@@ -101,7 +107,12 @@ def mock_relations_analyzer():
     analyzer = MagicMock()
     analyzer.prompt_version = "section-relations-v1"
     analyzer.analyze = AsyncMock(
-        return_value=RelationsResult(relations=[])
+        return_value=AnalyzerResponse(
+            result=RelationsResult(relations=[]),
+            model_id="gemini/gemini-2.5-flash",
+            prompt_version="section-relations-v1",
+            fallback_used=False,
+        )
     )
     return analyzer
 
@@ -111,7 +122,12 @@ def mock_questions_analyzer():
     analyzer = MagicMock()
     analyzer.prompt_version = "questions-answered-v1"
     analyzer.analyze = AsyncMock(
-        return_value=QuestionsResult(document_questions=[], section_questions=[])
+        return_value=AnalyzerResponse(
+            result=QuestionsResult(document_questions=[], section_questions=[]),
+            model_id="gemini/gemini-2.5-flash",
+            prompt_version="questions-answered-v1",
+            fallback_used=False,
+        )
     )
     return analyzer
 
@@ -121,7 +137,12 @@ def mock_conclusions_analyzer():
     analyzer = MagicMock()
     analyzer.PROMPT_VERSION = "conclusions-v1"
     analyzer.analyze = AsyncMock(
-        return_value=ConclusionsResult(observations=[])
+        return_value=AnalyzerResponse(
+            result=ConclusionsResult(observations=[]),
+            model_id="gemini/gemini-2.5-flash",
+            prompt_version="conclusions-v1",
+            fallback_used=False,
+        )
     )
     return analyzer
 
@@ -156,6 +177,8 @@ def service(
     mock_storage,
     mock_ingestion_storage,
 ) -> OnDemandAnalysisService:
+    mock_card_storage = MagicMock()
+    mock_card_storage.get_card = AsyncMock(return_value=None)
     return OnDemandAnalysisService(
         index_analyzer=mock_index_analyzer,
         relations_analyzer=mock_relations_analyzer,
@@ -163,6 +186,7 @@ def service(
         conclusions_analyzer=mock_conclusions_analyzer,
         storage=mock_storage,
         ingestion_storage=mock_ingestion_storage,
+        card_storage=mock_card_storage,
     )
 
 

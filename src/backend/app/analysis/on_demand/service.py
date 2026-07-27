@@ -11,6 +11,8 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
+from app.analysis.base_analysis.storage import BaseAnalysisStorage
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.conclusions_analyzer import ConclusionsAnalyzer
 from app.analysis.on_demand.index_analyzer import IndexAnalyzer
 from app.analysis.on_demand.models import (
@@ -52,6 +54,7 @@ class OnDemandAnalysisService:
         conclusions_analyzer: ConclusionsAnalyzer,
         storage: OnDemandAnalysisStorage,
         ingestion_storage: StorageService,
+        card_storage: BaseAnalysisStorage | None = None,
     ) -> None:
         """Initialize with all required dependencies.
 
@@ -62,6 +65,7 @@ class OnDemandAnalysisService:
             conclusions_analyzer: Analyzer for Conclusions & Recommendations (C3.4).
             storage: Persistence layer for analysis results.
             ingestion_storage: Storage service to load the document IR.
+            card_storage: Storage for base analysis cards (classification, language).
         """
         self._index_analyzer = index_analyzer
         self._relations_analyzer = relations_analyzer
@@ -69,6 +73,7 @@ class OnDemandAnalysisService:
         self._conclusions_analyzer = conclusions_analyzer
         self._storage = storage
         self._ingestion_storage = ingestion_storage
+        self._card_storage = card_storage
 
     async def execute(
         self,
@@ -132,8 +137,18 @@ class OnDemandAnalysisService:
         auto_fallback = preferences.get("auto_fallback", True)
         document_language = preferences.get("document_language")
 
+        # 3b. Load document card for classification and language
+        classification = "generic"
+        if self._card_storage is not None:
+            card = await self._card_storage.get_card(document_id)
+            if card is not None:
+                classification = card.classification.value if card.classification else "generic"
+                # Use card language if not provided in preferences
+                if document_language is None and card.file_metadata.language:
+                    document_language = card.file_metadata.language
+
         # 4. Route to correct analyzer and execute
-        result, prompt_version, model_id = await self._dispatch_analyzer(
+        response = await self._dispatch_analyzer(
             analysis_type=analysis_type,
             ir=ir,
             language=language,
@@ -141,7 +156,11 @@ class OnDemandAnalysisService:
             auto_fallback=auto_fallback,
             document_id=document_id,
             document_language=document_language,
+            classification=classification,
         )
+
+        # Determine the requested model (what the user asked for)
+        requested_model = model_override if model_override and model_override != "default" else None
 
         # 5. Build AnalysisRecord with status=COMPLETED, persist, return
         now = datetime.now(timezone.utc)
@@ -150,9 +169,11 @@ class OnDemandAnalysisService:
             document_id=document_id,
             analysis_type=analysis_type,
             status=AnalysisStatus.COMPLETED,
-            result=result.model_dump() if hasattr(result, "model_dump") else result,
-            model_id=model_id,
-            prompt_version=prompt_version,
+            result=response.result.model_dump() if hasattr(response.result, "model_dump") else response.result,
+            model_id=response.model_id,
+            requested_model=requested_model,
+            fallback_used=response.fallback_used,
+            prompt_version=response.prompt_version,
             error_message=None,
             created_at=now,
             updated_at=now,
@@ -165,7 +186,9 @@ class OnDemandAnalysisService:
             extra={
                 "document_id": document_id,
                 "analysis_type": analysis_type.value,
-                "model_id": model_id,
+                "model_id": response.model_id,
+                "requested_model": requested_model,
+                "fallback_used": response.fallback_used,
             },
         )
 
@@ -205,57 +228,68 @@ class OnDemandAnalysisService:
         auto_fallback: bool,
         document_id: str,
         document_language: str | None,
-    ) -> tuple:
-        """Route to the correct analyzer and return (result, prompt_version, model_id).
+        classification: str = "generic",
+    ) -> AnalyzerResponse:
+        """Route to the correct analyzer and return its AnalyzerResponse.
 
         For section_relations: checks if build_index result exists in storage
         and passes it to the RelationsAnalyzer if available.
 
+        Args:
+            analysis_type: Which analysis to run.
+            ir: The document's intermediate representation.
+            language: UI language for the response.
+            model_override: Optional model to use.
+            auto_fallback: Whether to allow automatic fallback.
+            document_id: UUID of the document.
+            document_language: Document language code.
+            classification: Document classification (default "generic").
+
         Returns:
-            Tuple of (typed_result, prompt_version, model_id).
+            AnalyzerResponse with result, model_id (actual), prompt_version, fallback_used.
         """
         if analysis_type == AnalysisType.BUILD_INDEX:
-            result = await self._index_analyzer.analyze(
+            return await self._index_analyzer.analyze(
                 ir=ir,
                 language=language,
+                classification=classification,
                 model_override=model_override,
                 auto_fallback=auto_fallback,
             )
-            return result, self._index_analyzer.prompt_version, model_override
 
         elif analysis_type == AnalysisType.SECTION_RELATIONS:
             # Check if build_index result exists to enrich the relations prompt
             index_result = await self._get_index_result(document_id)
 
-            result = await self._relations_analyzer.analyze(
+            return await self._relations_analyzer.analyze(
                 ir=ir,
                 language=language,
+                classification=classification,
                 model_override=model_override,
                 auto_fallback=auto_fallback,
                 index_result=index_result,
             )
-            return result, self._relations_analyzer.prompt_version, model_override
 
         elif analysis_type == AnalysisType.QUESTIONS_ANSWERED:
-            result = await self._questions_analyzer.analyze(
+            return await self._questions_analyzer.analyze(
                 ir=ir,
                 language=language,
+                classification=classification,
                 model_override=model_override,
                 auto_fallback=auto_fallback,
             )
-            return result, self._questions_analyzer.prompt_version, model_override
 
         elif analysis_type == AnalysisType.CONCLUSIONS:
             # Conclusions needs both ui_language and document_language
             doc_lang = document_language or language
-            result = await self._conclusions_analyzer.analyze(
+            return await self._conclusions_analyzer.analyze(
                 ir=ir,
                 language=language,
+                classification=classification,
                 document_language=doc_lang,
                 model_override=model_override,
                 auto_fallback=auto_fallback,
             )
-            return result, self._conclusions_analyzer.PROMPT_VERSION, model_override
 
         else:
             raise ValueError(f"Unknown analysis type: {analysis_type}")

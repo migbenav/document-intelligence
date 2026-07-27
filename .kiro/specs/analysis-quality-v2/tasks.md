@@ -6,14 +6,14 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
 
 ## Tasks
 
-- [ ] 1. Fix model_id propagation and create AnalyzerResponse dataclass
-  - [ ] 1.1 Create AnalyzerResponse dataclass
+- [x] 1. Fix model_id propagation and create AnalyzerResponse dataclass
+  - [x] 1.1 Create AnalyzerResponse dataclass
     - Create `src/backend/app/analysis/on_demand/analyzer_response.py`
     - Define `AnalyzerResponse` dataclass with fields: `result` (BaseModel), `model_id` (str — actual model from LLMResponse), `prompt_version` (str), `fallback_used` (bool, default False)
     - This is the standard return type for all four analyzers
     - _Requirements: Req 5 (criterion 1)_
 
-  - [ ] 1.2 Update IndexAnalyzer to return AnalyzerResponse
+  - [x] 1.2 Update IndexAnalyzer to return AnalyzerResponse
     - Modify `src/backend/app/analysis/on_demand/index_analyzer.py`
     - Change `analyze()` return type from `IndexResult` to `AnalyzerResponse`
     - Capture `response.model_id` from `LLMResponse` after LLM call
@@ -21,35 +21,35 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Return `AnalyzerResponse(result=result, model_id=response.model_id, prompt_version=PROMPT_VERSION, fallback_used=...)`
     - _Requirements: Req 5 (criterion 1)_
 
-  - [ ] 1.3 Update RelationsAnalyzer, QuestionsAnalyzer, ConclusionsAnalyzer to return AnalyzerResponse
+  - [x] 1.3 Update RelationsAnalyzer, QuestionsAnalyzer, ConclusionsAnalyzer to return AnalyzerResponse
     - Same pattern as 1.2 for each of the three remaining analyzers
     - Modify `relations_analyzer.py`, `questions_analyzer.py`, `conclusions_analyzer.py`
     - Each captures `response.model_id` and returns `AnalyzerResponse`
     - _Requirements: Req 5 (criterion 1)_
 
-  - [ ] 1.4 Update OnDemandAnalysisService to use AnalyzerResponse
+  - [x] 1.4 Update OnDemandAnalysisService to use AnalyzerResponse
     - Modify `src/backend/app/analysis/on_demand/service.py`
     - Change `_dispatch_analyzer` return type from `tuple` to `AnalyzerResponse`
     - In `execute()`: use `response.model_id` (actual) for `AnalysisRecord.model_id`
     - Add `requested_model` and `fallback_used` fields to `AnalysisRecord` construction
     - _Requirements: Req 5 (criteria 1, 3)_
 
-  - [ ] 1.5 Update AnalysisRecord model with new fields
+  - [x] 1.5 Update AnalysisRecord model with new fields
     - Modify `src/backend/app/analysis/on_demand/models.py`
     - Add `requested_model: str | None = None` field
     - Add `fallback_used: bool = False` field
     - These are optional with defaults for backward compat
     - _Requirements: Req 5 (criteria 1, 3)_
 
-  - [ ] 1.6 Write unit tests for model_id propagation
+  - [x] 1.6 Write unit tests for model_id propagation
     - Create `tests/unit/analysis/on_demand/test_model_propagation.py`
     - Test: analyzer returns actual model_id from LLMResponse (mock LLMClient)
     - Test: service uses actual model_id in AnalysisRecord (not model_override)
     - Test: fallback_used is True when response.model_id differs from requested
     - _Requirements: Req 5 (criteria 1, 3)_
 
-- [ ] 2. Classify LLM errors and update API responses
-  - [ ] 2.1 Create LLMQuotaExhaustedError exception
+- [x] 2. Classify LLM errors and update API responses
+  - [x] 2.1 Create LLMQuotaExhaustedError exception
     - Modify `src/backend/app/analysis/llm_client.py`
     - Add `LLMQuotaExhaustedError(Exception)` with `model_id: str` attribute
     - Add `_is_quota_error(self, error)` method: check for "429", "quota", "rate_limit" in error string or isinstance RateLimitError
@@ -57,7 +57,7 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Quota errors should NOT trigger fallback (user should choose a different model)
     - _Requirements: Req 5 (criterion 2)_
 
-  - [ ] 2.2 Update API endpoint with classified error responses
+  - [x] 2.2 Update API endpoint with classified error responses
     - Modify `src/backend/app/api/v1/analyses.py`
     - Import `LLMQuotaExhaustedError`, `LLMAuthenticationError` from llm_client
     - Import `asyncio.TimeoutError`
@@ -69,14 +69,14 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Add `requested_model` and `fallback_used` to success 200 response
     - _Requirements: Req 5 (criteria 2, 6)_
 
-  - [ ] 2.3 Update frontend error handling
+  - [x] 2.3 Update frontend error handling
     - Modify `src/frontend/src/api/analyses.ts`
     - Extend `handleErrorResponse` to parse `error_code` and `model_id` from response body
     - Create `AnalysisApiError` subclass or extend with `errorCode` and `modelId` fields
     - Handle new status codes: 429 (quota), 504 (timeout), 401 (auth)
     - _Requirements: Req 5 (criteria 5, 6)_
 
-  - [ ] 2.4 Display classified errors in UI
+  - [x] 2.4 Display classified errors in UI
     - Modify `src/frontend/src/store/analysisStore.ts`: store `errorCode` and `errorModelId` in state
     - Modify `src/frontend/src/components/upload/UploadPage.tsx` or create a new `AnalysisError` component
     - Display differentiated messages based on error_code:
@@ -87,14 +87,14 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Add i18n keys for all error messages (es.json, en.json)
     - _Requirements: Req 5 (criterion 5)_
 
-  - [ ] 2.5 Display model badge on analysis results
+  - [x] 2.5 Display model badge on analysis results
     - Modify `src/frontend/src/components/analysis/AnalysisResultView.tsx`
     - Add a small Badge showing `model_id` (shortened: "gemini-2.5-flash", "llama-3.3")
     - If `fallback_used` is true, show "(fallback)" suffix
     - Pass `model_id` and `fallback_used` from the analysis record to the view
     - _Requirements: Req 5 (criterion 4)_
 
-  - [ ] 2.6 Write tests for error classification
+  - [x] 2.6 Write tests for error classification
     - Create `tests/unit/analysis/test_llm_quota_error.py`
     - Test: RateLimitError with "429" raises LLMQuotaExhaustedError
     - Test: quota error does NOT trigger fallback
@@ -102,21 +102,21 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Test: API endpoint returns correct status codes and error_codes
     - _Requirements: Req 5 (criteria 2, 6)_
 
-- [ ] 3. Update model configuration and fallback logic
-  - [ ] 3.1 Fix DEFAULT_FALLBACK_MODEL
+- [x] 3. Update model configuration and fallback logic
+  - [x] 3.1 Fix DEFAULT_FALLBACK_MODEL
     - Modify `src/backend/app/analysis/llm_client.py`
     - Change `DEFAULT_FALLBACK_MODEL = "groq/llama-3.3-70b-versatile"` (was "gemini/gemini-2.5-flash")
     - This ensures that when Gemini hits quota, the fallback actually uses a different provider
     - _Requirements: Req 6 (criterion 2)_
 
-  - [ ] 3.2 Implement cross-provider fallback logic
+  - [x] 3.2 Implement cross-provider fallback logic
     - Modify `LLMClient.call()` fallback section
     - When `model_override` specifies a Groq model and fails → fallback to Gemini
     - When `model_override` specifies a Gemini model and fails → fallback to Groq
     - Add helper `_get_fallback_for(model_id: str) -> str` that picks the opposite provider
     - _Requirements: Req 6 (criterion 3)_
 
-  - [ ] 3.3 Add new models to frontend selector
+  - [x] 3.3 Add new models to frontend selector
     - Modify `src/frontend/src/components/layout/Sidebar.tsx`
     - Add to AVAILABLE_MODELS array:
       - `{ id: 'gemini/gemini-2.5-pro', nameKey: ..., descriptionKey: ... }`
@@ -124,15 +124,15 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Add i18n keys for new model names and descriptions (es.json, en.json)
     - _Requirements: Req 6 (criteria 1, 5)_
 
-  - [ ] 3.4 Write tests for cross-provider fallback
+  - [x] 3.4 Write tests for cross-provider fallback
     - Add tests to `tests/unit/analysis/test_llm_client.py`
     - Test: Groq model fails → fallback uses Gemini
     - Test: Gemini model fails → fallback uses Groq
     - Test: quota error does NOT trigger fallback (separate from transient)
     - _Requirements: Req 6 (criteria 2, 3)_
 
-- [ ] 4. Pass classification to analyzers (infrastructure)
-  - [ ] 4.1 Add BaseAnalysisStorage dependency to OnDemandAnalysisService
+- [x] 4. Pass classification to analyzers (infrastructure)
+  - [x] 4.1 Add BaseAnalysisStorage dependency to OnDemandAnalysisService
     - Modify `src/backend/app/analysis/on_demand/service.py`
     - Add `card_storage: BaseAnalysisStorage` to `__init__` parameters
     - In `execute()`: call `card_storage.get_card(document_id)` to load classification
@@ -140,26 +140,26 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Pass both to `_dispatch_analyzer` and then to each analyzer
     - _Requirements: Req 8 (criteria 1, 2, 4, 5)_
 
-  - [ ] 4.2 Wire BaseAnalysisStorage in application factory
+  - [x] 4.2 Wire BaseAnalysisStorage in application factory
     - Modify `src/backend/app/main.py`
     - Pass `base_analysis_storage` to `OnDemandAnalysisService.__init__` as `card_storage`
     - _Requirements: Req 8 (criterion 1)_
 
-  - [ ] 4.3 Update analyzer signatures to accept classification
+  - [x] 4.3 Update analyzer signatures to accept classification
     - Modify all four analyzers: add `classification: str = "generic"` parameter to `analyze()`
     - Each analyzer will use classification in prompt (implemented in tasks 5-8)
     - For now, accept the parameter without changing prompt behavior
     - _Requirements: Req 8 (criterion 3)_
 
-  - [ ] 4.4 Write tests for classification propagation
+  - [x] 4.4 Write tests for classification propagation
     - Create `tests/unit/analysis/on_demand/test_classification_input.py`
     - Test: service loads card and passes classification to analyzer
     - Test: missing card results in "generic" classification
     - Test: document_language from card is passed correctly
     - _Requirements: Req 8 (criteria 1-5)_
 
-- [ ] 5. Redesign Build Index prompt — functional comprehension
-  - [ ] 5.1 Update StructureNode model with new fields
+- [x] 5. Redesign Build Index prompt — functional comprehension
+  - [x] 5.1 Update StructureNode model with new fields
     - Modify `src/backend/app/analysis/on_demand/models.py`
     - Add `functional_group: str | None = None` to StructureNode
     - Add `original_headings: list[str] = []` to StructureNode
@@ -167,7 +167,7 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Update `role` field validators to accept new values: `enables`, `restricts`, `controls`, `delegates`
     - _Requirements: Req 1 (criteria 2, 3, 6)_
 
-  - [ ] 5.2 Rewrite Build Index prompt template
+  - [x] 5.2 Rewrite Build Index prompt template
     - Create `src/backend/app/analysis/on_demand/prompts/build_index_v2.py`
     - Set `PROMPT_VERSION = "build-index-v2"`
     - Prompt structure:
@@ -180,14 +180,14 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - JSON schema includes new fields (functional_group, original_headings, document_purpose)
     - _Requirements: Req 1 (criteria 1-8)_
 
-  - [ ] 5.3 Update IndexAnalyzer to use v2 prompt
+  - [x] 5.3 Update IndexAnalyzer to use v2 prompt
     - Modify `src/backend/app/analysis/on_demand/index_analyzer.py`
     - Import from `prompts/build_index_v2` instead of `prompts/build_index`
     - Include `classification` in prompt formatting
     - Validate against updated IndexResult model
     - _Requirements: Req 1 (criteria 1, 7)_
 
-  - [ ] 5.4 Update frontend IndexTreeView for new fields
+  - [x] 5.4 Update frontend IndexTreeView for new fields
     - Modify `src/frontend/src/types/analysis.ts`: add `functional_group`, `original_headings`, `document_purpose` to types
     - Modify `src/frontend/src/components/analysis/IndexTreeView.tsx`:
       - Show `functional_group` as a subtle label on level-1 nodes
@@ -195,7 +195,7 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
       - Show `document_purpose` at the top of the tree as a summary line
     - _Requirements: Req 1 (criteria 2, 3)_
 
-  - [ ] 5.5 Write tests for Build Index v2
+  - [x] 5.5 Write tests for Build Index v2
     - Create `tests/unit/analysis/on_demand/test_index_v2.py`
     - Test: prompt includes classification and functional instructions
     - Test: IndexResult with functional_group and original_headings parses correctly
@@ -203,13 +203,13 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Test: role values include new vocabulary (enables, restricts, controls, delegates)
     - _Requirements: Req 1 (criteria 1-8)_
 
-- [ ] 6. Redesign Questions Answered prompt — document logic
-  - [ ] 6.1 Update QuestionsResult model
+- [x] 6. Redesign Questions Answered prompt — document logic
+  - [x] 6.1 Update QuestionsResult model
     - Modify `src/backend/app/analysis/on_demand/models.py`
     - Add `coherence_note: str | None = None` to QuestionsResult
     - _Requirements: Req 2 (criterion 6)_
 
-  - [ ] 6.2 Rewrite Questions Answered prompt template
+  - [x] 6.2 Rewrite Questions Answered prompt template
     - Create `src/backend/app/analysis/on_demand/prompts/questions_answered_v2.py`
     - Set `PROMPT_VERSION = "questions-answered-v2"`
     - Prompt structure:
@@ -224,21 +224,21 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - JSON schema includes coherence_note
     - _Requirements: Req 2 (criteria 1-9)_
 
-  - [ ] 6.3 Update QuestionsAnalyzer to use v2 prompt
+  - [x] 6.3 Update QuestionsAnalyzer to use v2 prompt
     - Modify `src/backend/app/analysis/on_demand/questions_analyzer.py`
     - Import from `prompts/questions_answered_v2`
     - Include `classification` in prompt formatting
     - Validate against updated QuestionsResult model
     - _Requirements: Req 2 (criteria 1, 5)_
 
-  - [ ] 6.4 Update frontend QuestionsCascadeView for coherence_note
+  - [x] 6.4 Update frontend QuestionsCascadeView for coherence_note
     - Modify `src/frontend/src/types/analysis.ts`: add `coherence_note` to QuestionsResult type
     - Modify `src/frontend/src/components/analysis/QuestionsCascadeView.tsx`:
       - If `coherence_note` is present, show an Alert/warning banner at the top
     - Add i18n key for coherence warning label
     - _Requirements: Req 2 (criterion 6)_
 
-  - [ ] 6.5 Write tests for Questions Answered v2
+  - [x] 6.5 Write tests for Questions Answered v2
     - Create `tests/unit/analysis/on_demand/test_questions_v2.py`
     - Test: prompt includes classification
     - Test: normative classification produces regulatory-style instructions in prompt
@@ -246,15 +246,15 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Test: questions are not generic (test prompt instructs specificity)
     - _Requirements: Req 2 (criteria 1-9)_
 
-- [ ] 7. Redesign Conclusions prompt — domain-aware coherence
-  - [ ] 7.1 Update Observation model and ConclusionsResult
+- [x] 7. Redesign Conclusions prompt — domain-aware coherence
+  - [x] 7.1 Update Observation model and ConclusionsResult
     - Modify `src/backend/app/analysis/on_demand/models.py`
     - Change Observation `category` allowed values to: `purpose_mismatch`, `misplaced_content`, `title_mismatch`, `sequence_issue`, `duplication`, `contradiction`
     - Add `domain: str | None = None` to Observation
     - Add `domains_identified: list[str] = []` to ConclusionsResult
     - _Requirements: Req 3 (criteria 1, 6)_
 
-  - [ ] 7.2 Rewrite Conclusions prompt template
+  - [x] 7.2 Rewrite Conclusions prompt template
     - Create `src/backend/app/analysis/on_demand/prompts/conclusions_v2.py`
     - Set `PROMPT_VERSION = "conclusions-v2"`
     - Prompt structure:
@@ -272,14 +272,14 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - JSON schema includes domains_identified and domain per observation
     - _Requirements: Req 3 (criteria 1-10)_
 
-  - [ ] 7.3 Update ConclusionsAnalyzer to use v2 prompt
+  - [x] 7.3 Update ConclusionsAnalyzer to use v2 prompt
     - Modify `src/backend/app/analysis/on_demand/conclusions_analyzer.py`
     - Import from `prompts/conclusions_v2`
     - Include `classification` in prompt formatting
     - Validate against updated ConclusionsResult model
     - _Requirements: Req 3 (criteria 1, 7)_
 
-  - [ ] 7.4 Update frontend ConclusionsView for new categories
+  - [x] 7.4 Update frontend ConclusionsView for new categories
     - Modify `src/frontend/src/types/analysis.ts`: update Observation category union type and add `domain`, `domains_identified`
     - Modify `src/frontend/src/components/analysis/ConclusionsView.tsx`:
       - Group observations by domain (if domain is set) or by category
@@ -288,7 +288,7 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Add i18n keys for new category names
     - _Requirements: Req 3 (criteria 1, 6)_
 
-  - [ ] 7.5 Write tests for Conclusions v2
+  - [x] 7.5 Write tests for Conclusions v2
     - Create `tests/unit/analysis/on_demand/test_conclusions_v2.py`
     - Test: prompt includes classification and domain identification step
     - Test: prompt explicitly forbids cross-domain contradictions
@@ -296,14 +296,14 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Test: new categories validate correctly
     - _Requirements: Req 3 (criteria 1-10)_
 
-- [ ] 8. Redesign Section Relations prompt — functional connections
-  - [ ] 8.1 Update SectionRelation model
+- [x] 8. Redesign Section Relations prompt — functional connections
+  - [x] 8.1 Update SectionRelation model
     - Modify `src/backend/app/analysis/on_demand/models.py`
     - Change `type` allowed values to: `enables`, `restricts`, `requires`, `implements`, `contradicts`
     - Add `domain: str | None = None` to SectionRelation
     - _Requirements: Req 4 (criteria 1, 2)_
 
-  - [ ] 8.2 Rewrite Section Relations prompt template
+  - [x] 8.2 Rewrite Section Relations prompt template
     - Create `src/backend/app/analysis/on_demand/prompts/section_relations_v2.py`
     - Set `PROMPT_VERSION = "section-relations-v2"`
     - Prompt structure:
@@ -319,14 +319,14 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - If `index_result` is provided, include structure_tree summary in prompt
     - _Requirements: Req 4 (criteria 1-6)_
 
-  - [ ] 8.3 Update RelationsAnalyzer to use v2 prompt
+  - [x] 8.3 Update RelationsAnalyzer to use v2 prompt
     - Modify `src/backend/app/analysis/on_demand/relations_analyzer.py`
     - Import from `prompts/section_relations_v2`
     - Include `classification` in prompt formatting
     - Validate against updated RelationsResult model
     - _Requirements: Req 4 (criteria 1, 5)_
 
-  - [ ] 8.4 Update frontend RelationsListView for new types
+  - [x] 8.4 Update frontend RelationsListView for new types
     - Modify `src/frontend/src/types/analysis.ts`: update SectionRelation type union and add `domain`
     - Modify `src/frontend/src/components/analysis/RelationsListView.tsx`:
       - Update grouping to use new type names (enables, restricts, requires, implements, contradicts)
@@ -334,7 +334,7 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Add i18n keys for new relation type names
     - _Requirements: Req 4 (criteria 1, 2)_
 
-  - [ ] 8.5 Write tests for Section Relations v2
+  - [x] 8.5 Write tests for Section Relations v2
     - Create `tests/unit/analysis/on_demand/test_relations_v2.py`
     - Test: prompt includes classification
     - Test: prompt excludes trivial relationships instruction
@@ -342,8 +342,8 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Test: contradicts only flagged for same domain (prompt includes instruction)
     - _Requirements: Req 4 (criteria 1-6)_
 
-- [ ] 9. Improve language detection
-  - [ ] 9.1 Expand local language detector
+- [x] 9. Improve language detection
+  - [x] 9.1 Expand local language detector
     - Modify `src/backend/app/ingestion/language.py`
     - Change `_MAX_SAMPLE_LENGTH = 2000` (was 1000)
     - Add `_PORTUGUESE_STOPWORDS` set (top 50 Portuguese stopwords)
@@ -353,14 +353,14 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Update `detect()` to score all four languages and return the winner
     - _Requirements: Req 7 (criteria 1, 2, 5)_
 
-  - [ ] 9.2 Add LLM language confirmation to base analysis
+  - [x] 9.2 Add LLM language confirmation to base analysis
     - Modify `src/backend/app/analysis/base_analysis/llm_analyzer.py`
     - Add to the LLM prompt: "Also confirm or correct the detected document language. The system detected: {detected_language}. If incorrect, provide the correct ISO 639-1 code."
     - Parse language confirmation from LLM response
     - If LLM provides a different language, update the card's `file_metadata.language`
     - _Requirements: Req 7 (criteria 3, 4)_
 
-  - [ ] 9.3 Write tests for improved language detection
+  - [x] 9.3 Write tests for improved language detection
     - Modify `tests/unit/ingestion/test_language.py`
     - Test: sample expanded to 2000 chars
     - Test: Portuguese text correctly detected
@@ -369,20 +369,20 @@ Overhaul the on-demand analysis engine to focus on functional/purpose comprehens
     - Test: technical Spanish document with English terms → detected as Spanish
     - _Requirements: Req 7 (criteria 1-5)_
 
-- [ ] 10. Integration verification and cleanup
-  - [ ] 10.1 Run full backend test suite
+- [x] 10. Integration verification and cleanup
+  - [x] 10.1 Run full backend test suite
     - Execute `python -m pytest tests/ -v` from backend directory
     - Fix any test failures caused by the model changes (updated return types, new parameters)
     - Update existing tests that mock analyzers to use new AnalyzerResponse return type
     - _Requirements: All_
 
-  - [ ] 10.2 Run frontend build and type check
+  - [x] 10.2 Run frontend build and type check
     - Execute `npm run build` from frontend directory
     - Fix any TypeScript errors from updated types
     - Verify all components compile with new optional fields
     - _Requirements: All_
 
-  - [ ] 10.3 Verify backward compatibility
+  - [x] 10.3 Verify backward compatibility
     - Confirm old analysis results (with v1 prompt_version) still load and display correctly
     - New optional fields (functional_group, coherence_note, domain, etc.) default gracefully when absent
     - Frontend handles both v1 and v2 results without errors

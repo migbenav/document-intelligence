@@ -6,28 +6,179 @@ import type { Observation } from '@/types/analysis';
 
 export interface ConclusionsViewProps {
   observations: Observation[];
+  domains_identified?: string[];
 }
 
-/** All valid observation categories in display order. */
+/** All valid observation categories in display order (v2 first, then v1 legacy). */
 const CATEGORY_ORDER: Observation['category'][] = [
+  'purpose_mismatch',
+  'misplaced_content',
+  'title_mismatch',
+  'sequence_issue',
+  'duplication',
+  'contradiction',
+  // v1 legacy categories
   'coherence',
   'reordering',
-  'duplication',
   'orphan',
   'missing',
 ];
 
+/** Color mappings for category badges. */
+const CATEGORY_COLORS: Record<Observation['category'], string> = {
+  purpose_mismatch: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  misplaced_content: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  title_mismatch: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+  sequence_issue: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  duplication: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  contradiction: 'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300',
+  // v1 legacy colors
+  coherence: 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300',
+  reordering: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  orphan: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  missing: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+};
+
 /**
- * ConclusionsView — Displays structural observations grouped by category.
+ * ConclusionsView — Displays structural observations grouped by domain (v2)
+ * or by category (v1 fallback).
  *
- * Each observation shows the description (in ui_language), a visually distinct
- * suggestion block (in document_language), section_ref as a badge, and an
- * expandable source_ref with text excerpt and section context.
+ * When observations have `domain` set, they are grouped by domain with domain
+ * labels as section headers. Within each domain group, observations are ordered
+ * by category. Observations without a domain are grouped by category (v1 style).
  */
-export function ConclusionsView({ observations }: ConclusionsViewProps) {
+export function ConclusionsView({ observations, domains_identified }: ConclusionsViewProps) {
   const { t } = useTranslation();
 
-  // Group observations by category
+  if (observations.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground" data-testid="conclusions-empty">
+        {t('analysis.conclusions.empty')}
+      </p>
+    );
+  }
+
+  // Check if any observations have domain set (v2 style)
+  const hasDomains = observations.some((o) => o.domain);
+
+  if (hasDomains) {
+    return (
+      <section aria-label={t('analysis.conclusions.ariaLabel')} data-testid="conclusions-view">
+        <DomainGroupedView
+          observations={observations}
+          domains_identified={domains_identified ?? []}
+        />
+      </section>
+    );
+  }
+
+  // Fallback: group by category (v1 style)
+  return (
+    <section aria-label={t('analysis.conclusions.ariaLabel')} data-testid="conclusions-view">
+      <CategoryGroupedView observations={observations} />
+    </section>
+  );
+}
+
+// --- Domain-Grouped View (v2) ---
+
+interface DomainGroupedViewProps {
+  observations: Observation[];
+  domains_identified: string[];
+}
+
+function DomainGroupedView({ observations, domains_identified }: DomainGroupedViewProps) {
+  const { t } = useTranslation();
+
+  // Build domain order: identified domains first, then any remaining domains from observations
+  const observedDomains = [...new Set(observations.filter((o) => o.domain).map((o) => o.domain!))];
+  const domainOrder = [
+    ...domains_identified,
+    ...observedDomains.filter((d) => !domains_identified.includes(d)),
+  ];
+
+  // Group observations by domain
+  const byDomain = new Map<string, Observation[]>();
+  const noDomain: Observation[] = [];
+
+  for (const obs of observations) {
+    if (obs.domain) {
+      const existing = byDomain.get(obs.domain) ?? [];
+      existing.push(obs);
+      byDomain.set(obs.domain, existing);
+    } else {
+      noDomain.push(obs);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {domainOrder.map((domain) => {
+        const items = byDomain.get(domain);
+        if (!items || items.length === 0) return null;
+        return (
+          <DomainSection key={domain} domain={domain} observations={items} />
+        );
+      })}
+
+      {/* Observations without domain — group by category */}
+      {noDomain.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+            {t('analysis.conclusions.generalObservations')}
+          </h3>
+          <ul className="space-y-4" aria-label={t('analysis.conclusions.generalObservations')}>
+            {noDomain.map((observation, index) => (
+              <li key={`no-domain-${index}`}>
+                <ObservationItem observation={observation} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Domain Section ---
+
+interface DomainSectionProps {
+  domain: string;
+  observations: Observation[];
+}
+
+function DomainSection({ domain, observations }: DomainSectionProps) {
+  // Sort observations within domain by category order
+  const sorted = [...observations].sort(
+    (a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category)
+  );
+
+  return (
+    <div role="group" aria-labelledby={`domain-heading-${domain}`}>
+      <h3
+        id={`domain-heading-${domain}`}
+        className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3"
+      >
+        {domain}
+      </h3>
+      <ul className="space-y-4" aria-label={domain}>
+        {sorted.map((observation, index) => (
+          <li key={`${domain}-${index}`}>
+            <ObservationItem observation={observation} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// --- Category-Grouped View (v1 fallback) ---
+
+interface CategoryGroupedViewProps {
+  observations: Observation[];
+}
+
+function CategoryGroupedView({ observations }: CategoryGroupedViewProps) {
   const grouped = CATEGORY_ORDER.reduce<
     Partial<Record<Observation['category'], Observation[]>>
   >((acc, category) => {
@@ -40,26 +191,16 @@ export function ConclusionsView({ observations }: ConclusionsViewProps) {
 
   const categoryKeys = CATEGORY_ORDER.filter((cat) => grouped[cat]);
 
-  if (observations.length === 0) {
-    return (
-      <p className="text-sm text-muted-foreground" data-testid="conclusions-empty">
-        {t('analysis.conclusions.empty')}
-      </p>
-    );
-  }
-
   return (
-    <section aria-label={t('analysis.conclusions.ariaLabel')} data-testid="conclusions-view">
-      <div className="space-y-6">
-        {categoryKeys.map((category) => (
-          <CategoryGroup
-            key={category}
-            category={category}
-            observations={grouped[category]!}
-          />
-        ))}
-      </div>
-    </section>
+    <div className="space-y-6">
+      {categoryKeys.map((category) => (
+        <CategoryGroup
+          key={category}
+          category={category}
+          observations={grouped[category]!}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -103,8 +244,18 @@ interface ObservationItemProps {
 function ObservationItem({ observation }: ObservationItemProps) {
   const { t } = useTranslation();
 
+  const categoryLabel = t(`analysis.conclusions.categories.${observation.category}`);
+  const colorClass = CATEGORY_COLORS[observation.category] ?? '';
+
   return (
     <article className="rounded-md border p-4 space-y-3" data-testid="observation-item">
+      {/* Category badge */}
+      <div className="flex items-center gap-2">
+        <Badge className={colorClass} aria-label={categoryLabel}>
+          {categoryLabel}
+        </Badge>
+      </div>
+
       {/* Description in ui_language */}
       <p className="text-sm text-foreground">{observation.description}</p>
 
@@ -138,7 +289,6 @@ function ObservationItem({ observation }: ObservationItemProps) {
 }
 
 // --- Expandable Source Reference ---
-// Inline implementation until SourceRefPopover (task 9.5) is available.
 
 interface ExpandableSourceRefProps {
   textExcerpt: string;

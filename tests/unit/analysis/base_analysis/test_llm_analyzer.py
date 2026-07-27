@@ -474,7 +474,7 @@ async def test_prompt_version_included_in_result():
     )
 
     assert result is not None
-    assert result.prompt_version == "base-analysis-v1"
+    assert result.prompt_version == "base-analysis-v2"
 
 
 # --- Tests: Data Minimization (Req 3.7) ---
@@ -562,3 +562,175 @@ async def test_analyze_with_json_wrapped_in_markdown_fences_returns_none():
     )
 
     assert result is None
+
+
+# --- Tests: Language Confirmation (Req 7 criteria 3, 4) ---
+
+
+@pytest.mark.asyncio
+async def test_analyze_parses_language_confirmation():
+    """LLM response with 'language' field is parsed into confirmed_language."""
+    content = json.dumps({
+        "summary": "A document about regulations.",
+        "classification": "normative",
+        "language": "es",
+    })
+    response = LLMResponse(content=content, model_id="groq/llama-3.3-70b-versatile")
+    client = _make_mock_llm_client(response)
+    analyzer = LLMAnalyzer(client)
+
+    result = await analyzer.analyze(
+        title="Test",
+        chunks=_make_chunks(1),
+        organization_type=OrganizationType.FREE_FORM,
+        language="es",
+    )
+
+    assert result is not None
+    assert result.confirmed_language == "es"
+
+
+@pytest.mark.asyncio
+async def test_analyze_language_correction_different_from_detected():
+    """LLM can correct the detected language to a different one."""
+    content = json.dumps({
+        "summary": "Um documento sobre regulamentos.",
+        "classification": "normative",
+        "language": "pt",
+    })
+    response = LLMResponse(content=content, model_id="groq/llama-3.3-70b-versatile")
+    client = _make_mock_llm_client(response)
+    analyzer = LLMAnalyzer(client)
+
+    result = await analyzer.analyze(
+        title="Test",
+        chunks=_make_chunks(1),
+        organization_type=OrganizationType.FREE_FORM,
+        language="es",  # System detected Spanish but document is Portuguese
+    )
+
+    assert result is not None
+    assert result.confirmed_language == "pt"
+
+
+@pytest.mark.asyncio
+async def test_analyze_missing_language_field_gives_none():
+    """When LLM response has no 'language' field, confirmed_language is None."""
+    content = json.dumps({
+        "summary": "A document.",
+        "classification": "normative",
+    })
+    response = LLMResponse(content=content, model_id="groq/test")
+    client = _make_mock_llm_client(response)
+    analyzer = LLMAnalyzer(client)
+
+    result = await analyzer.analyze(
+        title="Test",
+        chunks=_make_chunks(1),
+        organization_type=OrganizationType.FREE_FORM,
+    )
+
+    assert result is not None
+    assert result.confirmed_language is None
+
+
+@pytest.mark.asyncio
+async def test_analyze_invalid_language_code_ignored():
+    """Invalid language code from LLM (too long, has digits) is ignored."""
+    content = json.dumps({
+        "summary": "A document.",
+        "classification": "normative",
+        "language": "spanish",  # Not a valid ISO 639-1 code
+    })
+    response = LLMResponse(content=content, model_id="groq/test")
+    client = _make_mock_llm_client(response)
+    analyzer = LLMAnalyzer(client)
+
+    result = await analyzer.analyze(
+        title="Test",
+        chunks=_make_chunks(1),
+        organization_type=OrganizationType.FREE_FORM,
+    )
+
+    assert result is not None
+    assert result.confirmed_language is None
+
+
+@pytest.mark.asyncio
+async def test_analyze_language_code_normalized_lowercase():
+    """Language code from LLM is normalized to lowercase."""
+    content = json.dumps({
+        "summary": "A document.",
+        "classification": "normative",
+        "language": "FR",
+    })
+    response = LLMResponse(content=content, model_id="groq/test")
+    client = _make_mock_llm_client(response)
+    analyzer = LLMAnalyzer(client)
+
+    result = await analyzer.analyze(
+        title="Test",
+        chunks=_make_chunks(1),
+        organization_type=OrganizationType.FREE_FORM,
+    )
+
+    assert result is not None
+    assert result.confirmed_language == "fr"
+
+
+@pytest.mark.asyncio
+async def test_prompt_includes_detected_language():
+    """Prompt includes the detected language for LLM to confirm/correct (Req 7 criterion 3)."""
+    response = _make_valid_llm_response()
+    client = _make_mock_llm_client(response)
+    analyzer = LLMAnalyzer(client)
+
+    await analyzer.analyze(
+        title="Test",
+        chunks=_make_chunks(1),
+        organization_type=OrganizationType.FREE_FORM,
+        language="en",
+    )
+
+    prompt = client.call.call_args[0][0]
+    assert "The system detected: en" in prompt
+
+
+@pytest.mark.asyncio
+async def test_prompt_includes_language_confirmation_instruction():
+    """Prompt asks LLM to confirm or correct the language."""
+    response = _make_valid_llm_response()
+    client = _make_mock_llm_client(response)
+    analyzer = LLMAnalyzer(client)
+
+    await analyzer.analyze(
+        title="Test",
+        chunks=_make_chunks(1),
+        organization_type=OrganizationType.FREE_FORM,
+    )
+
+    prompt = client.call.call_args[0][0]
+    assert "confirm or correct the detected document language" in prompt
+    assert "ISO 639-1" in prompt
+
+
+@pytest.mark.asyncio
+async def test_analyze_three_letter_language_code_accepted():
+    """Three-letter ISO 639-2 codes are also accepted (e.g., 'por')."""
+    content = json.dumps({
+        "summary": "A document.",
+        "classification": "normative",
+        "language": "por",
+    })
+    response = LLMResponse(content=content, model_id="groq/test")
+    client = _make_mock_llm_client(response)
+    analyzer = LLMAnalyzer(client)
+
+    result = await analyzer.analyze(
+        title="Test",
+        chunks=_make_chunks(1),
+        organization_type=OrganizationType.FREE_FORM,
+    )
+
+    assert result is not None
+    assert result.confirmed_language == "por"

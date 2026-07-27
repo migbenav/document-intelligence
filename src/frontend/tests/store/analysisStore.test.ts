@@ -3,11 +3,15 @@ import { useAnalysisStore } from '@/store/analysisStore';
 import type { AnalysisStatusSummary, AnalysisRecord } from '@/types/analysis';
 
 // Mock the API module
-vi.mock('@/api/analyses', () => ({
-  getAnalysisStatuses: vi.fn(),
-  triggerAnalysis: vi.fn(),
-  getAnalysisResult: vi.fn(),
-}));
+vi.mock('@/api/analyses', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/api/analyses')>();
+  return {
+    ...actual,
+    getAnalysisStatuses: vi.fn(),
+    triggerAnalysis: vi.fn(),
+    getAnalysisResult: vi.fn(),
+  };
+});
 
 import {
   getAnalysisStatuses,
@@ -35,6 +39,8 @@ const mockAnalysisRecord: AnalysisRecord = {
   status: 'completed',
   result: { tree: [] },
   model_id: 'gemini-2.5-flash',
+  requested_model: null,
+  fallback_used: false,
   prompt_version: 'v1',
   created_at: '2024-01-01T00:00:00Z',
   updated_at: '2024-01-01T12:00:00Z',

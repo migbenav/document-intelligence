@@ -23,6 +23,7 @@ from app.analysis.llm_client import (
     ConfigurationError,
     LLMAuthenticationError,
     LLMClient,
+    LLMQuotaExhaustedError,
     LLMResponse,
     LLMTransientError,
 )
@@ -112,16 +113,17 @@ class TestLLMClientInit:
                 LLMClient()
 
     def test_missing_groq_key_raises_configuration_error(self, monkeypatch):
-        """Missing GROQ_API_KEY raises ConfigurationError at init (Req 1.6)."""
+        """Missing GROQ_API_KEY does not raise ConfigurationError (Groq is optional fallback)."""
         monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
         monkeypatch.delenv("GROQ_API_KEY", raising=False)
 
         with patch.object(LLMClient, "_setup_litellm"):
-            with pytest.raises(ConfigurationError, match="GROQ_API_KEY"):
-                LLMClient()
+            # Should NOT raise - GROQ_API_KEY is optional
+            client = LLMClient()
+            assert client._groq_api_key is None
 
     def test_missing_both_keys_reports_both(self, monkeypatch):
-        """All missing keys are reported in a single error (Req 1.6)."""
+        """Missing GEMINI_API_KEY is reported in error (Req 1.6). GROQ_API_KEY is optional."""
         monkeypatch.delenv("GEMINI_API_KEY", raising=False)
         monkeypatch.delenv("GROQ_API_KEY", raising=False)
 
@@ -131,7 +133,6 @@ class TestLLMClientInit:
 
         error_msg = str(exc_info.value)
         assert "GEMINI_API_KEY" in error_msg
-        assert "GROQ_API_KEY" in error_msg
 
     def test_empty_string_key_treated_as_missing(self, monkeypatch):
         """Empty string API keys are treated as missing (Req 1.6)."""
@@ -529,3 +530,141 @@ class TestLLMClientAutoFallback:
             await client.call("prompt", auto_fallback=False)
 
         client._acompletion.assert_called_once()
+
+
+# --- Cross-Provider Fallback Tests (Req 6, criteria 2, 3) ---
+
+
+class TestLLMClientCrossProviderFallback:
+    """Tests for cross-provider fallback logic.
+
+    Validates: Requirements 6.2, 6.3
+    - When a Groq model fails with a transient error, fallback uses Gemini.
+    - When a Gemini model fails with a transient error, fallback uses Groq.
+    - Quota errors do NOT trigger fallback (user must select a different model).
+    """
+
+    @pytest.mark.asyncio
+    async def test_groq_model_fails_fallback_uses_gemini(self, client):
+        """When a Groq model fails, fallback uses Gemini (cross-provider)."""
+        fallback_response = _make_mock_response("gemini fallback response")
+        client._acompletion.side_effect = [
+            FakeServiceUnavailableError("Groq is down"),
+            fallback_response,
+        ]
+
+        result = await client.call(
+            "test prompt",
+            model_override="groq/llama-3.3-70b-versatile",
+        )
+
+        # The fallback model should be Gemini (the opposite provider)
+        assert result.content == "gemini fallback response"
+        assert result.model_id == DEFAULT_PRIMARY_MODEL
+        assert result.model_id.startswith("gemini/")
+
+        # Verify: first call to Groq, second call to Gemini
+        assert client._acompletion.call_count == 2
+        first_call = client._acompletion.call_args_list[0]
+        assert first_call.kwargs["model"] == "groq/llama-3.3-70b-versatile"
+        second_call = client._acompletion.call_args_list[1]
+        assert second_call.kwargs["model"] == DEFAULT_PRIMARY_MODEL
+
+    @pytest.mark.asyncio
+    async def test_gemini_model_fails_fallback_uses_groq(self, client):
+        """When a Gemini model fails, fallback uses Groq (cross-provider)."""
+        fallback_response = _make_mock_response("groq fallback response")
+        client._acompletion.side_effect = [
+            FakeTimeout("Gemini timed out"),
+            fallback_response,
+        ]
+
+        result = await client.call(
+            "test prompt",
+            model_override="gemini/gemini-2.5-flash",
+        )
+
+        # The fallback model should be Groq (the opposite provider)
+        assert result.content == "groq fallback response"
+        assert result.model_id == "groq/llama-3.3-70b-versatile"
+        assert result.model_id.startswith("groq/")
+
+        # Verify: first call to Gemini, second call to Groq
+        assert client._acompletion.call_count == 2
+        first_call = client._acompletion.call_args_list[0]
+        assert first_call.kwargs["model"] == "gemini/gemini-2.5-flash"
+        second_call = client._acompletion.call_args_list[1]
+        assert second_call.kwargs["model"] == "groq/llama-3.3-70b-versatile"
+
+    @pytest.mark.asyncio
+    async def test_gemini_pro_fails_fallback_uses_groq(self, client):
+        """Gemini Pro model also falls back to Groq (not same provider)."""
+        fallback_response = _make_mock_response("groq fallback")
+        client._acompletion.side_effect = [
+            FakeRateLimitError("Service overloaded"),
+            fallback_response,
+        ]
+        # Override _is_quota_error to return False so it's treated as transient
+        client._is_quota_error = lambda e: False
+
+        result = await client.call(
+            "test prompt",
+            model_override="gemini/gemini-2.5-pro",
+        )
+
+        assert result.model_id == "groq/llama-3.3-70b-versatile"
+        assert client._acompletion.call_count == 2
+        second_call = client._acompletion.call_args_list[1]
+        assert second_call.kwargs["model"] == "groq/llama-3.3-70b-versatile"
+
+    @pytest.mark.asyncio
+    async def test_quota_error_does_not_trigger_fallback(self, client):
+        """Quota exhaustion raises LLMQuotaExhaustedError without fallback attempt."""
+        # Simulate a quota error — _is_quota_error checks for "429", "quota", "rate_limit"
+        client._acompletion.side_effect = FakeRateLimitError(
+            "429 quota exceeded for model"
+        )
+
+        with pytest.raises(LLMQuotaExhaustedError) as exc_info:
+            await client.call(
+                "test prompt",
+                model_override="gemini/gemini-2.5-flash",
+            )
+
+        # Should only be called once — no fallback attempt
+        client._acompletion.assert_called_once()
+        assert exc_info.value.model_id == "gemini/gemini-2.5-flash"
+
+    @pytest.mark.asyncio
+    async def test_quota_error_on_groq_does_not_fallback(self, client):
+        """Quota exhaustion on Groq also raises immediately without fallback."""
+        client._acompletion.side_effect = FakeRateLimitError(
+            "rate_limit: quota exhausted"
+        )
+
+        with pytest.raises(LLMQuotaExhaustedError) as exc_info:
+            await client.call(
+                "test prompt",
+                model_override="groq/llama-3.3-70b-versatile",
+            )
+
+        client._acompletion.assert_called_once()
+        assert exc_info.value.model_id == "groq/llama-3.3-70b-versatile"
+
+    @pytest.mark.asyncio
+    async def test_get_fallback_for_groq_returns_gemini(self, client):
+        """_get_fallback_for picks Gemini when given a Groq model."""
+        fallback = client._get_fallback_for("groq/llama-3.3-70b-versatile")
+        assert fallback.startswith("gemini/")
+
+    @pytest.mark.asyncio
+    async def test_get_fallback_for_gemini_returns_groq(self, client):
+        """_get_fallback_for picks Groq when given a Gemini model."""
+        fallback = client._get_fallback_for("gemini/gemini-2.5-flash")
+        assert fallback.startswith("groq/")
+
+    @pytest.mark.asyncio
+    async def test_get_fallback_for_unknown_provider_returns_default(self, client):
+        """_get_fallback_for falls back to configured DEFAULT_FALLBACK_MODEL for unknown providers."""
+        fallback = client._get_fallback_for("openai/gpt-4")
+        assert fallback == client.fallback_model

@@ -241,6 +241,9 @@ class BaseAnalysisService:
         If an existing card is present, reuse its id and created_at.
         Otherwise, generate a new UUID and set created_at to now.
 
+        If the LLM confirmed/corrected the language, file_metadata.language
+        is updated to match the LLM's determination (Req 7 criteria 3, 4).
+
         Args:
             document_id: The document UUID.
             local_result: Results from local processing.
@@ -255,6 +258,16 @@ class BaseAnalysisService:
         created_at = existing_card.created_at if existing_card else now
 
         if llm_result is not None:
+            # Update file_metadata.language if LLM provided a different language
+            file_metadata = local_result.file_metadata
+            if (
+                llm_result.confirmed_language is not None
+                and llm_result.confirmed_language != file_metadata.language
+            ):
+                file_metadata = file_metadata.model_copy(
+                    update={"language": llm_result.confirmed_language}
+                )
+
             return DocumentCard(
                 id=card_id,
                 document_id=document_id,
@@ -263,7 +276,7 @@ class BaseAnalysisService:
                 classification=llm_result.classification,
                 organization_type=local_result.organization_type,
                 statistics=local_result.statistics,
-                file_metadata=local_result.file_metadata,
+                file_metadata=file_metadata,
                 status="completed",
                 outdated=False,
                 model_id=llm_result.model_id,

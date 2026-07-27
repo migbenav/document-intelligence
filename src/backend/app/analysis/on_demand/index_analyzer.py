@@ -14,8 +14,13 @@ import logging
 import re
 
 from app.analysis.llm_client import LLMClient, LLMResponse
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.models import IndexResult
-from app.analysis.on_demand.prompts.build_index import PROMPT_TEMPLATE, PROMPT_VERSION
+from app.analysis.on_demand.prompts.build_index_v2 import (
+    PROMPT_TEMPLATE,
+    PROMPT_VERSION,
+    get_purpose_hint,
+)
 from app.analysis.on_demand.text_preparation import prepare_document_text
 from app.models.document import IntermediateRepresentation
 
@@ -59,19 +64,22 @@ class IndexAnalyzer:
         self,
         ir: IntermediateRepresentation,
         language: str,
+        classification: str = "generic",
         model_override: str | None = None,
         auto_fallback: bool = True,
-    ) -> IndexResult:
+    ) -> AnalyzerResponse:
         """Analyze document structure and produce a hierarchical index.
 
         Args:
             ir: The document's intermediate representation with ordered chunks.
             language: The response language for the LLM output (e.g., "es", "en").
+            classification: Document classification (e.g., "normative", "procedure").
+                Defaults to "generic". Used in v2 prompts (tasks 5-8).
             model_override: Optional model identifier to override the default.
             auto_fallback: Whether to allow automatic fallback on transient errors.
 
         Returns:
-            An IndexResult containing the structure tree.
+            An AnalyzerResponse wrapping the IndexResult with model metadata.
 
         Raises:
             IndexAnalysisError: On JSON parse failure or validation error.
@@ -82,8 +90,11 @@ class IndexAnalyzer:
         # 1. Build full document text from IR chunks with section markers
         document_text = prepare_document_text(ir)
 
-        # 2. Format the prompt with response language and document content
+        # 2. Format the prompt with classification, purpose hint, language, and document content
+        purpose_hint = get_purpose_hint(classification)
         prompt = PROMPT_TEMPLATE.format(
+            classification=classification,
+            purpose_hint=purpose_hint,
             response_language=language,
             document_text=document_text,
         )
@@ -104,6 +115,15 @@ class IndexAnalyzer:
             ),
             timeout=_LLM_TIMEOUT_SECONDS,
         )
+
+        # Determine the requested model for fallback detection
+        if model_override is not None and model_override != "default":
+            requested_model = model_override
+        else:
+            requested_model = self._llm_client.primary_model
+
+        # Detect whether fallback was used
+        fallback_used = response.model_id != requested_model
 
         # 4. Parse JSON response and validate as IndexResult
         raw_json = _extract_json(response.content)
@@ -143,8 +163,14 @@ class IndexAnalyzer:
                 "document_id": ir.document_id,
                 "model_id": response.model_id,
                 "node_count": len(result.tree),
+                "fallback_used": fallback_used,
             },
         )
 
-        # 5. Return validated IndexResult
-        return result
+        # 5. Return AnalyzerResponse with metadata
+        return AnalyzerResponse(
+            result=result,
+            model_id=response.model_id,
+            prompt_version=PROMPT_VERSION,
+            fallback_used=fallback_used,
+        )

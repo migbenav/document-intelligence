@@ -156,14 +156,18 @@ class TestQuestionsAnalyzerSuccess:
 
     @pytest.mark.asyncio
     async def test_successful_analysis(self):
-        """A valid JSON response produces a valid QuestionsResult."""
+        """A valid JSON response produces a valid AnalyzerResponse with QuestionsResult."""
         response_data = _valid_questions_response()
         mock_client = _make_mock_llm_client(json.dumps(response_data))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="es")
+        response = await analyzer.analyze(ir, language="es")
 
+        from app.analysis.on_demand.analyzer_response import AnalyzerResponse
+        assert isinstance(response, AnalyzerResponse)
+        result = response.result
         assert isinstance(result, QuestionsResult)
         assert len(result.document_questions) == 3
         assert len(result.section_questions) == 2
@@ -179,11 +183,15 @@ class TestQuestionsAnalyzerSuccess:
         response_data = _valid_questions_response()
         content = f"```json\n{json.dumps(response_data)}\n```"
         mock_client = _make_mock_llm_client(content)
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="en")
+        response = await analyzer.analyze(ir, language="en")
 
+        from app.analysis.on_demand.analyzer_response import AnalyzerResponse
+        assert isinstance(response, AnalyzerResponse)
+        result = response.result
         assert isinstance(result, QuestionsResult)
         assert len(result.document_questions) == 3
         assert len(result.section_questions) == 2
@@ -194,6 +202,7 @@ class TestQuestionsAnalyzerSuccess:
         mock_client = _make_mock_llm_client(
             json.dumps({"document_questions": [], "section_questions": []})
         )
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -212,6 +221,7 @@ class TestQuestionsAnalyzerSuccess:
         mock_client = _make_mock_llm_client(
             json.dumps({"document_questions": [], "section_questions": []})
         )
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -227,6 +237,7 @@ class TestQuestionsAnalyzerSuccess:
         mock_client = _make_mock_llm_client(
             json.dumps({"document_questions": [], "section_questions": []})
         )
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -247,7 +258,7 @@ class TestQuestionsAnalyzerSuccess:
         mock_client = MagicMock()
         analyzer = QuestionsAnalyzer(mock_client)
 
-        assert analyzer.prompt_version == "questions-answered-v1"
+        assert analyzer.prompt_version == "questions-answered-v2"
 
 
 class TestQuestionsAnalyzerCascadeValidation:
@@ -259,6 +270,7 @@ class TestQuestionsAnalyzerCascadeValidation:
         data = _valid_questions_response()
         data["document_questions"][0]["level"] = "section"
         mock_client = _make_mock_llm_client(json.dumps(data))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -273,6 +285,7 @@ class TestQuestionsAnalyzerCascadeValidation:
         data = _valid_questions_response()
         data["section_questions"][0]["level"] = "document"
         mock_client = _make_mock_llm_client(json.dumps(data))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -286,12 +299,13 @@ class TestQuestionsAnalyzerCascadeValidation:
         """All document_questions with correct level='document' pass validation."""
         data = _valid_questions_response()
         mock_client = _make_mock_llm_client(json.dumps(data))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="es")
+        response = await analyzer.analyze(ir, language="es")
 
-        for q in result.document_questions:
+        for q in response.result.document_questions:
             assert q.level == "document"
 
     @pytest.mark.asyncio
@@ -299,12 +313,13 @@ class TestQuestionsAnalyzerCascadeValidation:
         """All section_questions with correct level='section' pass validation."""
         data = _valid_questions_response()
         mock_client = _make_mock_llm_client(json.dumps(data))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = QuestionsAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="es")
+        response = await analyzer.analyze(ir, language="es")
 
-        for q in result.section_questions:
+        for q in response.result.section_questions:
             assert q.level == "section"
 
 
@@ -334,11 +349,12 @@ class TestQuestionsAnalyzerFailures:
 
     @pytest.mark.asyncio
     async def test_timeout_raises_asyncio_timeout(self):
-        """LLM call exceeding 30s raises asyncio.TimeoutError."""
+        """LLM call exceeding timeout raises asyncio.TimeoutError."""
         mock_client = MagicMock()
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
 
         async def slow_call(*args, **kwargs):
-            await asyncio.sleep(60)
+            await asyncio.sleep(120)
             return LLMResponse(content="{}", model_id="test")
 
         mock_client.call = slow_call

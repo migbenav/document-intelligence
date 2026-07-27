@@ -23,6 +23,8 @@ class DetectedLanguage(str, Enum):
 
     SPANISH = "es"
     ENGLISH = "en"
+    PORTUGUESE = "pt"
+    FRENCH = "fr"
     UNKNOWN = "unknown"
 
 

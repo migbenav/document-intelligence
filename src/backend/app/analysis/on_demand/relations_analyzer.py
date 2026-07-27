@@ -1,14 +1,14 @@
-"""RelationsAnalyzer — Section Relations analysis (C3.2).
+"""RelationsAnalyzer — Section Relations analysis (v2 — Functional Connections).
 
-Produces a list of significant relationships between document sections via a
-single LLM call with the full document content. Relationships use a controlled
-vocabulary: constrains, depends_on, complements, contradicts.
+Produces a list of significant functional relationships between document sections
+via a single LLM call with the full document content. Relationships use the v2
+vocabulary: enables, restricts, requires, implements, contradicts.
 
-If a prior IndexResult is available, node IDs from the structure tree are
-included in the prompt so the LLM can reference them in source_section and
+If a prior IndexResult is available, the prompt includes a functional structure
+summary so the LLM can reference functional group names in source_section and
 target_section fields. Otherwise, sections are referenced by title.
 
-Requirements covered: Req 3 (criteria 1-7)
+Requirements covered: Req 4 (criteria 1-6)
 """
 
 import asyncio
@@ -17,10 +17,12 @@ import logging
 import re
 
 from app.analysis.llm_client import LLMClient, LLMResponse
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.models import IndexResult, RelationsResult, StructureNode
-from app.analysis.on_demand.prompts.section_relations import (
+from app.analysis.on_demand.prompts.section_relations_v2 import (
     PROMPT_TEMPLATE,
     PROMPT_VERSION,
+    build_structure_context,
 )
 from app.analysis.on_demand.text_preparation import prepare_document_text
 from app.models.document import IntermediateRepresentation
@@ -91,22 +93,25 @@ class RelationsAnalyzer:
         self,
         ir: IntermediateRepresentation,
         language: str,
+        classification: str = "generic",
         model_override: str | None = None,
         auto_fallback: bool = True,
         index_result: IndexResult | None = None,
-    ) -> RelationsResult:
+    ) -> AnalyzerResponse:
         """Analyze document and produce inter-section relationships.
 
         Args:
             ir: The document's intermediate representation with ordered chunks.
             language: The response language for the LLM output (e.g., "es", "en").
+            classification: Document classification (e.g., "normative", "procedure").
+                Defaults to "generic". Used in v2 prompts (tasks 5-8).
             model_override: Optional model identifier to override the default.
             auto_fallback: Whether to allow automatic fallback on transient errors.
             index_result: If provided, structure tree node IDs are included in the
                 prompt so the LLM can reference them in source_section/target_section.
 
         Returns:
-            A RelationsResult containing the list of section relationships.
+            An AnalyzerResponse wrapping the RelationsResult with model metadata.
 
         Raises:
             RelationsAnalysisError: On JSON parse failure or validation error.
@@ -117,28 +122,25 @@ class RelationsAnalyzer:
         # 1. Build full document text from IR chunks with section markers
         document_text = prepare_document_text(ir)
 
-        # 2. Format the prompt with response language and document content
+        # 2. Build structure context from index_result (empty string if None)
+        structure_context = build_structure_context(index_result)
+
+        # 3. Format the prompt with classification, response language, structure
+        #    context, and document content
         prompt = PROMPT_TEMPLATE.format(
+            classification=classification,
             response_language=language,
+            structure_context=structure_context,
             document_text=document_text,
         )
 
-        # 3. If index_result is provided, insert structure tree nodes between
-        #    instructions and DOCUMENT CONTENT
-        if index_result is not None:
-            structure_section = _build_structure_tree_section(index_result)
-            # Insert before "--- DOCUMENT CONTENT ---"
-            prompt = prompt.replace(
-                "--- DOCUMENT CONTENT ---",
-                f"{structure_section}\n\n--- DOCUMENT CONTENT ---",
-            )
-
-        # 4. Call LLM with 30s timeout
+        # 4. Call LLM with timeout
         logger.info(
             "Starting Section Relations analysis",
             extra={
                 "document_id": ir.document_id,
                 "language": language,
+                "classification": classification,
                 "has_index": index_result is not None,
             },
         )
@@ -195,5 +197,18 @@ class RelationsAnalyzer:
             },
         )
 
-        # 6. Return validated RelationsResult
-        return result
+        # 6. Determine the requested model for fallback detection
+        if model_override is not None and model_override != "default":
+            requested_model = model_override
+        else:
+            requested_model = self._llm_client.primary_model
+
+        # Detect whether fallback was used
+        fallback_used = response.model_id != requested_model
+
+        return AnalyzerResponse(
+            result=result,
+            model_id=response.model_id,
+            prompt_version=PROMPT_VERSION,
+            fallback_used=fallback_used,
+        )

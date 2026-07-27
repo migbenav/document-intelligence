@@ -1,12 +1,15 @@
 import { useState, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
+import { useTranslation } from '@/i18n';
 import type { AnsweredQuestion, SourceRef } from '@/types/analysis';
 
 export interface QuestionsCascadeViewProps {
   documentQuestions: AnsweredQuestion[];
   sectionQuestions: AnsweredQuestion[];
+  coherenceNote?: string | null;
 }
 
 /**
@@ -19,12 +22,26 @@ export interface QuestionsCascadeViewProps {
 export function QuestionsCascadeView({
   documentQuestions,
   sectionQuestions,
+  coherenceNote,
 }: QuestionsCascadeViewProps) {
+  const { t } = useTranslation();
   // Group section questions by section_title
   const sectionGroups = groupBySectionTitle(sectionQuestions);
 
   return (
     <div className="space-y-6" data-testid="questions-cascade-view">
+      {/* Coherence warning banner */}
+      {coherenceNote && (
+        <Alert
+          className="border-yellow-500/50 bg-yellow-50 text-yellow-900 dark:bg-yellow-950/20 dark:text-yellow-200"
+          data-testid="coherence-note-alert"
+        >
+          <AlertDescription>
+            <p className="font-medium text-sm mb-1">{t('analysis.questions.coherenceWarning')}</p>
+            <p className="text-sm">{coherenceNote}</p>
+          </AlertDescription>
+        </Alert>
+      )}
       {/* Document-level questions */}
       {documentQuestions.length > 0 && (
         <section aria-labelledby="document-questions-heading">

@@ -118,8 +118,12 @@
         "defaultDesc": "Usa el modelo óptimo para cada tarea",
         "gemini": "Gemini 2.5 Flash",
         "geminiDesc": "Principal — análisis profundo",
+        "geminiPro": "Gemini 2.5 Pro",
+        "geminiProDesc": "Mayor calidad, más lento. Para documentos complejos.",
         "groq": "Groq Llama 3.3 70B",
-        "groqDesc": "Rápido — análisis base"
+        "groqDesc": "Rápido — análisis base",
+        "groqMaverick": "Groq Llama 4 Maverick",
+        "groqMaverickDesc": "Balance velocidad/calidad, 128K tokens."
       }
     },
     "fallback": {
@@ -204,14 +208,29 @@
       "retry": "Reintentar"
     },
     "outdatedBanner": "Los resultados pueden no reflejar el documento actual.",
+    "questions": {
+      "coherenceWarning": "Nota de coherencia"
+    },
+    "error": {
+      "title": "Error de Análisis",
+      "quotaExhausted": "Se agotó la cuota de {model}. Seleccione otro modelo o espere.",
+      "timeout": "El análisis tardó demasiado. Intente con un modelo más rápido.",
+      "authError": "Error de credenciales para el modelo. Verifique la configuración.",
+      "analysisFailed": "El análisis falló. Intente nuevamente."
+    },
     "relations": {
       "title": "Relaciones entre Secciones",
       "empty": "No se identificaron relaciones entre secciones.",
+      "domain": "Dominio: {domain}",
       "types": {
-        "constrains": "Restringe",
-        "depends_on": "Depende de",
-        "complements": "Complementa",
-        "contradicts": "Contradice"
+        "enables": "Habilita",
+        "restricts": "Restringe",
+        "requires": "Requiere",
+        "implements": "Implementa",
+        "contradicts": "Contradice",
+        "constrains": "Restringe (v1)",
+        "depends_on": "Depende de (v1)",
+        "complements": "Complementa (v1)"
       },
       "sourceRef": {
         "show": "Mostrar fuente",
@@ -228,10 +247,16 @@
       "showSource": "Mostrar fuente",
       "hideSource": "Ocultar fuente",
       "sectionContext": "Sección: {section}",
+      "generalObservations": "Observaciones Generales",
       "categories": {
+        "purpose_mismatch": "Desajuste de Propósito",
+        "misplaced_content": "Contenido Mal Ubicado",
+        "title_mismatch": "Título Inconsistente",
+        "sequence_issue": "Problema de Secuencia",
+        "duplication": "Duplicación",
+        "contradiction": "Contradicción",
         "coherence": "Coherencia",
         "reordering": "Reordenamiento",
-        "duplication": "Duplicación",
         "orphan": "Secciones Huérfanas",
         "missing": "Elementos Faltantes"
       }

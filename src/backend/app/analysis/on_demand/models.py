@@ -80,7 +80,22 @@ class StructureNode(BaseModel):
         default=None,
         description=(
             "Functional role of this section: defines, classifies, establishes, "
-            "regulates, recommends, lists, restricts, describes — or null if undetermined"
+            "regulates, recommends, lists, restricts, describes, enables, "
+            "controls, delegates — or null if undetermined"
+        ),
+    )
+    functional_group: Optional[str] = Field(
+        default=None,
+        description=(
+            "Functional grouping this node belongs to (v2). Multiple sections "
+            "serving the same function share a functional_group label."
+        ),
+    )
+    original_headings: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Original document headings that were merged into this functional node (v2). "
+            "Empty for v1 results or when the node maps 1:1 to a heading."
         ),
     )
     question_answered: Optional[str] = Field(
@@ -99,12 +114,39 @@ class StructureNode(BaseModel):
         description="Child nodes (subsections) in document order",
     )
 
+    _VALID_ROLES = {
+        # v1 roles
+        "defines", "classifies", "establishes", "regulates",
+        "recommends", "lists", "restricts", "describes",
+        # v2 roles
+        "enables", "controls", "delegates",
+    }
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def validate_role(cls, v: str | None) -> str | None:
+        """Accept known role values; pass through unknown ones for forward compat."""
+        # None is valid (undetermined role)
+        if v is None:
+            return v
+        # Normalize to lowercase for consistency
+        if isinstance(v, str):
+            return v.lower()
+        return v
+
 
 class IndexResult(BaseModel):
     """Result of the Build Index analysis — a hierarchical structure tree."""
 
     tree: list[StructureNode] = Field(
         description="Top-level nodes of the document structure tree"
+    )
+    document_purpose: Optional[str] = Field(
+        default=None,
+        description=(
+            "One-sentence summary of the document's overall purpose (v2). "
+            "None for v1 results."
+        ),
     )
 
 
@@ -120,11 +162,18 @@ class SectionRelation(BaseModel):
     target_section: str = Field(
         description="Title or node ID of the related section"
     )
-    type: Literal["constrains", "depends_on", "complements", "contradicts"] = Field(
+    type: Literal[
+        "constrains", "depends_on", "complements", "contradicts",
+        "enables", "restricts", "requires", "implements",
+    ] = Field(
         description="Relationship type from the controlled vocabulary"
     )
     description: str = Field(
         description="One-sentence explanation of the relationship (in ui_language)"
+    )
+    domain: str | None = Field(
+        default=None,
+        description="Domain/topic this relationship belongs to (e.g., 'parking', 'elevators')",
     )
     source_ref: Optional["SourceRef"] = Field(
         default=None,
@@ -171,6 +220,10 @@ class QuestionsResult(BaseModel):
     section_questions: list[AnsweredQuestion] = Field(
         description="1-2 questions per major section about what each section contributes"
     )
+    coherence_note: str | None = Field(
+        default=None,
+        description="Note explaining why the document lacks a coherent logical chain, if applicable",
+    )
 
 
 # --- Conclusions & Recommendations Result (C3.4) ---
@@ -180,7 +233,16 @@ class Observation(BaseModel):
     """A structural observation about the document's organization."""
 
     category: Literal[
-        "coherence", "reordering", "duplication", "orphan", "missing"
+        "coherence",
+        "reordering",
+        "duplication",
+        "orphan",
+        "missing",
+        "purpose_mismatch",
+        "misplaced_content",
+        "title_mismatch",
+        "sequence_issue",
+        "contradiction",
     ] = Field(description="Observation category")
     description: str = Field(
         description="Explanation of the observation (in ui_language)"
@@ -195,6 +257,10 @@ class Observation(BaseModel):
         default=None,
         description="Which section(s) the observation refers to",
     )
+    domain: Optional[str] = Field(
+        default=None,
+        description="The domain/topic this observation belongs to (e.g., 'parking', 'elevators')",
+    )
     source_ref: Optional["SourceRef"] = Field(
         default=None,
         description="Reference to the source text supporting this observation",
@@ -206,6 +272,10 @@ class ConclusionsResult(BaseModel):
 
     observations: list[Observation] = Field(
         description="3-15 structural observations prioritized by impact"
+    )
+    domains_identified: list[str] = Field(
+        default_factory=list,
+        description="Independent domains/topics identified in the document (e.g., 'parking', 'elevators', 'common areas')",
     )
 
 
@@ -231,6 +301,14 @@ class AnalysisRecord(BaseModel):
     model_id: Optional[str] = Field(
         default=None,
         description="LLM model identifier that produced this result",
+    )
+    requested_model: Optional[str] = Field(
+        default=None,
+        description="Model originally requested by the user (may differ from model_id if fallback was used)",
+    )
+    fallback_used: bool = Field(
+        default=False,
+        description="Whether a fallback model was used instead of the requested model",
     )
     prompt_version: Optional[str] = Field(
         default=None,

@@ -31,6 +31,8 @@ export interface StructureNode {
   title: string;
   level: number;
   role: string | null;
+  functional_group?: string | null;
+  original_headings?: string[];
   question_answered: string | null;
   source_ref: SourceRef | null;
   children: StructureNode[];
@@ -40,8 +42,18 @@ export interface StructureNode {
 export interface SectionRelation {
   source_section: string;
   target_section: string;
-  type: 'constrains' | 'depends_on' | 'complements' | 'contradicts';
+  type:
+    | 'enables'
+    | 'restricts'
+    | 'requires'
+    | 'implements'
+    | 'contradicts'
+    // Legacy v1 types kept for backward compatibility
+    | 'constrains'
+    | 'depends_on'
+    | 'complements';
   description: string;
+  domain?: string | null;
   source_ref: SourceRef | null;
 }
 
@@ -55,10 +67,22 @@ export interface AnsweredQuestion {
 
 /** A structural observation from the Conclusions analysis. */
 export interface Observation {
-  category: 'coherence' | 'reordering' | 'duplication' | 'orphan' | 'missing';
+  category:
+    | 'purpose_mismatch'
+    | 'misplaced_content'
+    | 'title_mismatch'
+    | 'sequence_issue'
+    | 'duplication'
+    | 'contradiction'
+    // v1 categories kept for backward compat
+    | 'coherence'
+    | 'reordering'
+    | 'orphan'
+    | 'missing';
   description: string;
   suggestion: string;
   section_ref: string | null;
+  domain: string | null;
   source_ref: SourceRef | null;
 }
 
@@ -75,6 +99,7 @@ export interface AnalysisStatusSummary {
 /** Result payload for the Build Index analysis. */
 export interface IndexResult {
   tree: StructureNode[];
+  document_purpose?: string | null;
 }
 
 /** Result payload for the Section Relations analysis. */
@@ -86,11 +111,13 @@ export interface RelationsResult {
 export interface QuestionsResult {
   document_questions: AnsweredQuestion[];
   section_questions: AnsweredQuestion[];
+  coherence_note: string | null;
 }
 
 /** Result payload for the Conclusions & Recommendations analysis. */
 export interface ConclusionsResult {
   observations: Observation[];
+  domains_identified: string[];
 }
 
 /** A persisted analysis record as returned by the API. */
@@ -99,6 +126,8 @@ export interface AnalysisRecord {
   status: AnalysisStatus;
   result: IndexResult | RelationsResult | QuestionsResult | ConclusionsResult | null;
   model_id: string | null;
+  requested_model: string | null;
+  fallback_used: boolean;
   prompt_version: string | null;
   created_at: string;
   updated_at: string;

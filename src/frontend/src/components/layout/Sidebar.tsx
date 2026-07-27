@@ -32,9 +32,19 @@ const AVAILABLE_MODELS = [
     descriptionKey: 'sidebar.model.options.geminiDesc',
   },
   {
+    id: 'gemini/gemini-2.5-pro',
+    nameKey: 'sidebar.model.options.geminiPro',
+    descriptionKey: 'sidebar.model.options.geminiProDesc',
+  },
+  {
     id: 'groq/llama-3.3-70b-versatile',
     nameKey: 'sidebar.model.options.groq',
     descriptionKey: 'sidebar.model.options.groqDesc',
+  },
+  {
+    id: 'groq/meta-llama/llama-4-maverick-17b-128e',
+    nameKey: 'sidebar.model.options.groqMaverick',
+    descriptionKey: 'sidebar.model.options.groqMaverickDesc',
   },
 ] as const;
 

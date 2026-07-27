@@ -13,6 +13,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from app.analysis.llm_client import LLMResponse
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.index_analyzer import (
     IndexAnalyzer,
     IndexAnalysisError,
@@ -106,11 +107,12 @@ def _valid_index_response() -> dict:
     }
 
 
-def _make_mock_llm_client(response_content: str) -> MagicMock:
+def _make_mock_llm_client(response_content: str, model_id: str = "gemini/gemini-2.5-flash") -> MagicMock:
     """Create a mock LLMClient that returns the given content."""
     mock_client = MagicMock()
+    mock_client.primary_model = "gemini/gemini-2.5-flash"
     mock_client.call = AsyncMock(
-        return_value=LLMResponse(content=response_content, model_id="gemini/gemini-2.5-flash")
+        return_value=LLMResponse(content=response_content, model_id=model_id)
     )
     return mock_client
 
@@ -144,20 +146,24 @@ class TestIndexAnalyzerSuccess:
 
     @pytest.mark.asyncio
     async def test_successful_analysis(self):
-        """A valid JSON response produces a valid IndexResult."""
+        """A valid JSON response produces a valid AnalyzerResponse with IndexResult."""
         response_data = _valid_index_response()
         mock_client = _make_mock_llm_client(json.dumps(response_data))
         analyzer = IndexAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="es")
+        response = await analyzer.analyze(ir, language="es")
 
-        assert isinstance(result, IndexResult)
-        assert len(result.tree) == 2
-        assert result.tree[0].title == "Introduction"
-        assert result.tree[0].role == "defines"
-        assert result.tree[0].children[0].title == "Scope"
-        assert result.tree[1].title == "Procedure"
+        assert isinstance(response, AnalyzerResponse)
+        assert isinstance(response.result, IndexResult)
+        assert response.model_id == "gemini/gemini-2.5-flash"
+        assert response.prompt_version == "build-index-v2"
+        assert response.fallback_used is False
+        assert len(response.result.tree) == 2
+        assert response.result.tree[0].title == "Introduction"
+        assert response.result.tree[0].role == "defines"
+        assert response.result.tree[0].children[0].title == "Scope"
+        assert response.result.tree[1].title == "Procedure"
 
     @pytest.mark.asyncio
     async def test_response_with_json_fences(self):
@@ -168,10 +174,11 @@ class TestIndexAnalyzerSuccess:
         analyzer = IndexAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="en")
+        response = await analyzer.analyze(ir, language="en")
 
-        assert isinstance(result, IndexResult)
-        assert len(result.tree) == 2
+        assert isinstance(response, AnalyzerResponse)
+        assert isinstance(response.result, IndexResult)
+        assert len(response.result.tree) == 2
 
     @pytest.mark.asyncio
     async def test_prompt_includes_document_text(self):
@@ -209,7 +216,7 @@ class TestIndexAnalyzerSuccess:
         analyzer = IndexAnalyzer(mock_client)
         ir = _make_ir()
 
-        await analyzer.analyze(
+        response = await analyzer.analyze(
             ir, language="en", model_override="custom-model", auto_fallback=False
         )
 
@@ -219,6 +226,8 @@ class TestIndexAnalyzerSuccess:
         assert call_kwargs["temperature"] == 0.1
         assert call_kwargs["model_override"] == "custom-model"
         assert call_kwargs["auto_fallback"] is False
+        # model_id differs from model_override, so fallback_used should be True
+        assert response.fallback_used is True
 
     @pytest.mark.asyncio
     async def test_prompt_version_property(self):
@@ -226,7 +235,7 @@ class TestIndexAnalyzerSuccess:
         mock_client = MagicMock()
         analyzer = IndexAnalyzer(mock_client)
 
-        assert analyzer.prompt_version == "build-index-v1"
+        assert analyzer.prompt_version == "build-index-v2"
 
 
 class TestIndexAnalyzerFailures:
@@ -278,11 +287,12 @@ class TestIndexAnalyzerFailures:
 
     @pytest.mark.asyncio
     async def test_timeout_raises_asyncio_timeout(self):
-        """LLM call exceeding 30s raises asyncio.TimeoutError."""
+        """LLM call exceeding timeout raises asyncio.TimeoutError."""
         mock_client = MagicMock()
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
 
         async def slow_call(*args, **kwargs):
-            await asyncio.sleep(60)
+            await asyncio.sleep(120)
             return LLMResponse(content="{}", model_id="test")
 
         mock_client.call = slow_call
@@ -296,6 +306,7 @@ class TestIndexAnalyzerFailures:
     async def test_llm_exception_propagates(self):
         """Exceptions from LLMClient.call propagate to the caller."""
         mock_client = MagicMock()
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         mock_client.call = AsyncMock(side_effect=RuntimeError("LLM unavailable"))
         analyzer = IndexAnalyzer(mock_client)
         ir = _make_ir()

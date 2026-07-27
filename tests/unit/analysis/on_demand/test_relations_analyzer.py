@@ -14,6 +14,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from app.analysis.llm_client import LLMResponse
+from app.analysis.on_demand.analyzer_response import AnalyzerResponse
 from app.analysis.on_demand.models import IndexResult, RelationsResult, StructureNode
 from app.analysis.on_demand.relations_analyzer import (
     RelationsAnalyzer,
@@ -68,14 +69,15 @@ def _make_ir(chunks: list[ContentChunkModel] | None = None) -> IntermediateRepre
 
 
 def _valid_relations_response() -> dict:
-    """Return a valid RelationsResult JSON structure."""
+    """Return a valid RelationsResult JSON structure using v2 relation types."""
     return {
         "relations": [
             {
                 "source_section": "Restrictions",
                 "target_section": "Procedures",
-                "type": "constrains",
+                "type": "restricts",
                 "description": "The restrictions limit purchase procedures.",
+                "domain": "procurement",
                 "source_ref": {
                     "chunk_ids": ["c3"],
                     "text_excerpt": "Restrictions on purchase amounts.",
@@ -85,8 +87,9 @@ def _valid_relations_response() -> dict:
             {
                 "source_section": "Procedures",
                 "target_section": "Definitions",
-                "type": "depends_on",
+                "type": "requires",
                 "description": "Procedures require understanding key terms.",
+                "domain": "procurement",
                 "source_ref": {
                     "chunk_ids": ["c2"],
                     "text_excerpt": "Procedures for requesting purchases.",
@@ -145,6 +148,7 @@ def _make_index_result() -> IndexResult:
 def _make_mock_llm_client(response_content: str) -> MagicMock:
     """Create a mock LLMClient that returns the given content."""
     mock_client = MagicMock()
+    mock_client.primary_model = "gemini/gemini-2.5-flash"
     mock_client.call = AsyncMock(
         return_value=LLMResponse(
             content=response_content, model_id="gemini/gemini-2.5-flash"
@@ -221,17 +225,21 @@ class TestRelationsAnalyzerSuccess:
         """A valid JSON response produces a valid RelationsResult."""
         response_data = _valid_relations_response()
         mock_client = _make_mock_llm_client(json.dumps(response_data))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="es")
+        response = await analyzer.analyze(ir, language="es")
 
+        assert response.prompt_version == "section-relations-v2"
+        assert response.model_id == "gemini/gemini-2.5-flash"
+        result = response.result
         assert isinstance(result, RelationsResult)
         assert len(result.relations) == 2
-        assert result.relations[0].type == "constrains"
+        assert result.relations[0].type == "restricts"
         assert result.relations[0].source_section == "Restrictions"
         assert result.relations[0].target_section == "Procedures"
-        assert result.relations[1].type == "depends_on"
+        assert result.relations[1].type == "requires"
 
     @pytest.mark.asyncio
     async def test_response_with_json_fences(self):
@@ -239,11 +247,13 @@ class TestRelationsAnalyzerSuccess:
         response_data = _valid_relations_response()
         content = f"```json\n{json.dumps(response_data)}\n```"
         mock_client = _make_mock_llm_client(content)
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="en")
+        response = await analyzer.analyze(ir, language="en")
 
+        result = response.result
         assert isinstance(result, RelationsResult)
         assert len(result.relations) == 2
 
@@ -251,6 +261,7 @@ class TestRelationsAnalyzerSuccess:
     async def test_prompt_includes_document_text(self):
         """The prompt sent to the LLM includes the full document text."""
         mock_client = _make_mock_llm_client(json.dumps({"relations": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -267,6 +278,7 @@ class TestRelationsAnalyzerSuccess:
     async def test_prompt_includes_language(self):
         """The prompt includes the response language instruction."""
         mock_client = _make_mock_llm_client(json.dumps({"relations": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -277,9 +289,24 @@ class TestRelationsAnalyzerSuccess:
         assert "Respond in es" in prompt
 
     @pytest.mark.asyncio
+    async def test_prompt_includes_classification(self):
+        """The prompt includes the document classification."""
+        mock_client = _make_mock_llm_client(json.dumps({"relations": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
+        analyzer = RelationsAnalyzer(mock_client)
+        ir = _make_ir()
+
+        await analyzer.analyze(ir, language="es", classification="normative")
+
+        call_args = mock_client.call.call_args
+        prompt = call_args[0][0]
+        assert "This is a normative document" in prompt
+
+    @pytest.mark.asyncio
     async def test_llm_called_with_correct_parameters(self):
         """LLMClient.call is invoked with expected parameters."""
         mock_client = _make_mock_llm_client(json.dumps({"relations": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -300,17 +327,19 @@ class TestRelationsAnalyzerSuccess:
         mock_client = MagicMock()
         analyzer = RelationsAnalyzer(mock_client)
 
-        assert analyzer.prompt_version == "section-relations-v1"
+        assert analyzer.prompt_version == "section-relations-v2"
 
     @pytest.mark.asyncio
     async def test_empty_relations_accepted(self):
         """An empty relations list is a valid result."""
         mock_client = _make_mock_llm_client(json.dumps({"relations": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
-        result = await analyzer.analyze(ir, language="es")
+        response = await analyzer.analyze(ir, language="es")
 
+        result = response.result
         assert isinstance(result, RelationsResult)
         assert len(result.relations) == 0
 
@@ -322,6 +351,7 @@ class TestRelationsAnalyzerWithIndex:
     async def test_prompt_includes_structure_tree_nodes(self):
         """When index_result is provided, the prompt includes node IDs."""
         mock_client = _make_mock_llm_client(json.dumps({"relations": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
         index = _make_index_result()
@@ -330,16 +360,17 @@ class TestRelationsAnalyzerWithIndex:
 
         call_args = mock_client.call.call_args
         prompt = call_args[0][0]
-        assert "--- STRUCTURE TREE NODES ---" in prompt
-        assert '- node-1: "Definitions"' in prompt
-        assert '- node-1.1: "Key Terms"' in prompt
-        assert '- node-2: "Procedures"' in prompt
-        assert '- node-3: "Restrictions"' in prompt
+        assert "--- BUILD INDEX STRUCTURE" in prompt
+        assert 'node-1: "Definitions"' in prompt
+        assert 'node-1.1: "Key Terms"' in prompt
+        assert 'node-2: "Procedures"' in prompt
+        assert 'node-3: "Restrictions"' in prompt
 
     @pytest.mark.asyncio
     async def test_structure_tree_before_document_content(self):
         """Structure tree nodes appear before the DOCUMENT CONTENT section."""
         mock_client = _make_mock_llm_client(json.dumps({"relations": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
         index = _make_index_result()
@@ -348,7 +379,7 @@ class TestRelationsAnalyzerWithIndex:
 
         call_args = mock_client.call.call_args
         prompt = call_args[0][0]
-        tree_pos = prompt.index("--- STRUCTURE TREE NODES ---")
+        tree_pos = prompt.index("--- BUILD INDEX STRUCTURE")
         doc_pos = prompt.index("--- DOCUMENT CONTENT ---")
         assert tree_pos < doc_pos
 
@@ -356,6 +387,7 @@ class TestRelationsAnalyzerWithIndex:
     async def test_without_index_no_structure_section(self):
         """When index_result is None, no structure tree section is in the prompt."""
         mock_client = _make_mock_llm_client(json.dumps({"relations": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -363,7 +395,7 @@ class TestRelationsAnalyzerWithIndex:
 
         call_args = mock_client.call.call_args
         prompt = call_args[0][0]
-        assert "--- STRUCTURE TREE NODES ---" not in prompt
+        assert "--- BUILD INDEX STRUCTURE" not in prompt
 
 
 class TestRelationsAnalyzerFailures:
@@ -373,6 +405,7 @@ class TestRelationsAnalyzerFailures:
     async def test_invalid_json_raises_error(self):
         """Non-JSON LLM response raises RelationsAnalysisError."""
         mock_client = _make_mock_llm_client("This is not JSON at all.")
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -384,6 +417,7 @@ class TestRelationsAnalyzerFailures:
         """Valid JSON that doesn't match RelationsResult schema raises error."""
         # Missing required 'relations' field
         mock_client = _make_mock_llm_client(json.dumps({"items": []}))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -411,6 +445,7 @@ class TestRelationsAnalyzerFailures:
             ]
         }
         mock_client = _make_mock_llm_client(json.dumps(data))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
@@ -421,19 +456,26 @@ class TestRelationsAnalyzerFailures:
 
     @pytest.mark.asyncio
     async def test_timeout_raises_asyncio_timeout(self):
-        """LLM call exceeding 30s raises asyncio.TimeoutError."""
+        """LLM call exceeding the timeout raises asyncio.TimeoutError."""
         mock_client = MagicMock()
 
         async def slow_call(*args, **kwargs):
-            await asyncio.sleep(60)
+            await asyncio.sleep(200)
             return LLMResponse(content="{}", model_id="test")
 
         mock_client.call = slow_call
         analyzer = RelationsAnalyzer(mock_client)
+        # Override timeout to avoid waiting 90s in tests
+        import app.analysis.on_demand.relations_analyzer as mod
+        original_timeout = mod._LLM_TIMEOUT_SECONDS
+        mod._LLM_TIMEOUT_SECONDS = 0.1
         ir = _make_ir()
 
-        with pytest.raises(asyncio.TimeoutError):
-            await analyzer.analyze(ir, language="es")
+        try:
+            with pytest.raises(asyncio.TimeoutError):
+                await analyzer.analyze(ir, language="es")
+        finally:
+            mod._LLM_TIMEOUT_SECONDS = original_timeout
 
     @pytest.mark.asyncio
     async def test_llm_exception_propagates(self):
@@ -468,6 +510,7 @@ class TestRelationsAnalyzerFailures:
             ]
         }
         mock_client = _make_mock_llm_client(json.dumps(data))
+        mock_client.primary_model = "gemini/gemini-2.5-flash"
         analyzer = RelationsAnalyzer(mock_client)
         ir = _make_ir()
 
