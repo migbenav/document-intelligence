@@ -72,7 +72,7 @@ class ConclusionsAnalyzer:
             document_text=document_text,
         )
 
-        # Call LLM with 30s timeout (Decision 6 from design.md)
+        # Call LLM with 90s timeout (Decision 6 from design.md)
         llm_response = await asyncio.wait_for(
             self._llm_client.call(
                 prompt,
@@ -81,7 +81,7 @@ class ConclusionsAnalyzer:
                 model_override=model_override,
                 auto_fallback=auto_fallback,
             ),
-            timeout=30.0,
+            timeout=90.0,
         )
 
         # Parse response: strip ```json fences if present

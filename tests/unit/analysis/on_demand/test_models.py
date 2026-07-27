@@ -37,12 +37,12 @@ class TestSourceRef:
         ref = SourceRef(chunk_ids=["c1"], text_excerpt=text)
         assert len(ref.text_excerpt) == 500
 
-    def test_text_excerpt_rejects_over_500_chars(self):
-        """SourceRef rejects text_excerpt longer than 500 characters."""
-        text = "a" * 501
-        with pytest.raises(ValidationError) as exc_info:
-            SourceRef(chunk_ids=["c1"], text_excerpt=text)
-        assert "text_excerpt" in str(exc_info.value)
+    def test_text_excerpt_truncates_over_500_chars(self):
+        """SourceRef truncates text_excerpt longer than 500 characters."""
+        text = "a" * 600
+        ref = SourceRef(chunk_ids=["c1"], text_excerpt=text)
+        assert len(ref.text_excerpt) == 500
+        assert ref.text_excerpt.endswith("...")
 
     def test_section_is_optional(self):
         """SourceRef allows section to be None."""

@@ -19,10 +19,11 @@ Este documento describe los pasos de configuración que deben completarse en Sup
 | 2 | `src/backend/app/db/migrations/002_create_analysis_sessions.sql` | Tabla `analysis_sessions` (Knowledge Model, estado del análisis) |
 | 3 | `src/backend/app/db/migrations/003_add_quality_analysis.sql` | Columnas de quality analysis en `analysis_sessions` |
 | 4 | `src/backend/app/db/migrations/004_create_document_cards.sql` | Tabla `document_cards` para base analysis, índice `idx_document_cards_document_id` |
+| 5 | `src/backend/app/db/migrations/005_create_analysis_results.sql` | Tabla `analysis_results` para on-demand analysis, índice `idx_analysis_results_document_id` |
 
 Copia el contenido de cada archivo SQL y ejecútalo en el SQL Editor.
 
-**Verificación:** En Table Editor confirma que las tablas existen (`documents`, `document_chunks`, `analysis_sessions`, `document_cards`) y que `analysis_sessions` tiene las columnas `quality_analysis`, `quality_status`, etc.
+**Verificación:** En Table Editor confirma que las tablas existen (`documents`, `document_chunks`, `analysis_sessions`, `document_cards`, `analysis_results`) y que `analysis_sessions` tiene las columnas `quality_analysis`, `quality_status`, etc.
 
 ---
 

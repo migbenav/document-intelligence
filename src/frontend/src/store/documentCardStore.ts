@@ -11,6 +11,7 @@ export interface DocumentCardStore {
   error: string | null;
 
   // Actions
+  setCard: (card: DocumentCard) => void;
   fetchCard: (documentId: string) => Promise<void>;
   retryLlm: (documentId: string) => Promise<void>;
   reset: () => void;
@@ -28,6 +29,10 @@ const initialState = {
 
 export const useDocumentCardStore = create<DocumentCardStore>((set) => ({
   ...initialState,
+
+  setCard: (card: DocumentCard) => {
+    set({ card, error: null });
+  },
 
   fetchCard: async (documentId: string) => {
     set({ loading: true, error: null });

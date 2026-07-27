@@ -54,7 +54,8 @@ def sanitize_filename(filename: str) -> str:
     """Sanitize a filename for safe storage.
 
     Removes path traversal sequences, replaces dangerous characters,
-    and ensures the result is a safe, flat filename.
+    and ensures the result is a safe, flat filename compatible with
+    Supabase Storage (ASCII-only keys).
     """
     # Remove any directory components (path traversal prevention)
     filename = os.path.basename(filename)
@@ -69,8 +70,8 @@ def sanitize_filename(filename: str) -> str:
     filename = re.sub(r"\.{2,}", ".", filename)
 
     # Replace characters that are dangerous in file paths/URLs
-    # Keep alphanumeric, dots, hyphens, underscores
-    filename = re.sub(r"[^\w.\-]", "_", filename)
+    # Keep only ASCII alphanumeric, dots, hyphens, underscores
+    filename = re.sub(r"[^a-zA-Z0-9.\-_]", "_", filename)
 
     # Collapse multiple underscores
     filename = re.sub(r"_+", "_", filename)

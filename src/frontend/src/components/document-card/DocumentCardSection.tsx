@@ -33,6 +33,8 @@ export function DocumentCardSection({ documentId }: DocumentCardSectionProps) {
   const pollCountRef = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const setStoreCard = useDocumentCardStore((s) => s.setCard);
+
   const stopPolling = useCallback(() => {
     if (intervalRef.current !== null) {
       clearInterval(intervalRef.current);
@@ -45,8 +47,9 @@ export function DocumentCardSection({ documentId }: DocumentCardSectionProps) {
 
     try {
       const result = await fetchCardApi(documentId);
-      // Card is available
+      // Card is available — update both local and global state
       setCard(result);
+      setStoreCard(result);
       stopPolling();
     } catch (err) {
       if (

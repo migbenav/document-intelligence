@@ -28,7 +28,7 @@ from app.models.document import IntermediateRepresentation
 logger = logging.getLogger(__name__)
 
 # Timeout for a single LLM call (Decision 6 from design.md)
-_LLM_TIMEOUT_SECONDS = 30
+_LLM_TIMEOUT_SECONDS = 90
 
 
 class RelationsAnalysisError(Exception):

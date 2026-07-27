@@ -9,7 +9,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class AnalysisType(str, Enum):
@@ -43,13 +43,20 @@ class SourceRef(BaseModel):
 
     chunk_ids: list[str] = Field(description="IR chunk IDs that support this element")
     text_excerpt: str = Field(
-        max_length=500,
         description="Relevant text passage from the document (max 500 characters)",
     )
     section: Optional[str] = Field(
         default=None,
         description="Section name where the referenced text appears",
     )
+
+    @field_validator("text_excerpt", mode="before")
+    @classmethod
+    def truncate_text_excerpt(cls, v: str) -> str:
+        """Truncate text_excerpt to 500 chars if LLM exceeds the limit."""
+        if isinstance(v, str) and len(v) > 500:
+            return v[:497] + "..."
+        return v
 
 
 # --- Build Index Result (C3.1) ---

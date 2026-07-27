@@ -172,7 +172,7 @@ class TestStoreOriginal:
         mock_supabase.storage.from_().upload.assert_called_once_with(
             path="doc-abc/original/report.md",
             file=b"file content",
-            file_options={"content-type": "application/octet-stream"},
+            file_options={"content-type": "text/markdown"},
         )
 
     async def test_sanitizes_filename_in_path(self, storage_service, mock_supabase):
