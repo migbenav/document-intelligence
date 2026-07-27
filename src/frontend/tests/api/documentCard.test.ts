@@ -29,16 +29,6 @@ const mockCompletedCard: DocumentCard = {
   updated_at: '2026-07-26T10:30:04Z',
 };
 
-const mockPartialCard: DocumentCard = {
-  ...mockCompletedCard,
-  id: 'card-002',
-  summary: null,
-  classification: null,
-  status: 'partial',
-  model_id: null,
-  prompt_version: null,
-};
-
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
 });

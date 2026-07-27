@@ -6,8 +6,8 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
 
 ## Tasks
 
-- [ ] 1. Define data models and database migration
-  - [ ] 1.1 Create analysis result Pydantic models
+- [x] 1. Define data models and database migration
+  - [x] 1.1 Create analysis result Pydantic models
     - Create `src/backend/app/analysis/on_demand/__init__.py`
     - Create `src/backend/app/analysis/on_demand/models.py`
     - Define `AnalysisType` enum (build_index, section_relations, questions_answered, conclusions)
@@ -24,14 +24,14 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Define `AnalysisRecord` model (id, document_id, analysis_type, status, result: dict|None, model_id, prompt_version, error_message, created_at, updated_at)
     - _Requirements: Req 2 (criterion 2), Req 3 (criterion 2), Req 4 (criterion 2), Req 5 (criterion 3), Req 6 (criterion 8), Req 9 (criterion 1)_
 
-  - [ ] 1.2 Create database migration
+  - [x] 1.2 Create database migration
     - Create `src/backend/app/db/migrations/005_create_analysis_results.sql`
     - Table `analysis_results`: UUID PK, document_id FK, analysis_type TEXT, status TEXT DEFAULT 'not_started', result JSONB, model_id TEXT, prompt_version TEXT, error_message TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ
     - UNIQUE constraint on (document_id, analysis_type)
     - Index on document_id
     - _Requirements: Req 6 (criteria 3, 5, 6)_
 
-  - [ ] 1.3 Write unit tests for models
+  - [x] 1.3 Write unit tests for models
     - Create `tests/unit/analysis/on_demand/test_models.py`
     - Test SourceRef validation (text_excerpt max 500 chars)
     - Test StructureNode recursive children serialization
@@ -39,8 +39,8 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Test enum values match design specification
     - _Requirements: Req 2 (criterion 2), Req 9 (criterion 1)_
 
-- [ ] 2. Implement OnDemandAnalysisStorage
-  - [ ] 2.1 Create storage module
+- [x] 2. Implement OnDemandAnalysisStorage
+  - [x] 2.1 Create storage module
     - Create `src/backend/app/analysis/on_demand/storage.py`
     - Implement `OnDemandAnalysisStorage` class with `__init__(self, supabase_client)`
     - `async get_result(document_id, analysis_type) -> AnalysisRecord | None`: query by document_id + analysis_type
@@ -49,7 +49,7 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - `async mark_all_outdated(document_id) -> None`: update all rows for document_id to status="outdated"
     - _Requirements: Req 6 (criteria 3, 5, 6), Req 7 (criteria 6, 7)_
 
-  - [ ] 2.2 Write unit tests for storage
+  - [x] 2.2 Write unit tests for storage
     - Create `tests/unit/analysis/on_demand/test_storage.py`
     - Test get_result: existing, non-existing
     - Test save_result: insert new, update existing (upsert)
@@ -58,34 +58,34 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - All tests mock Supabase client
     - _Requirements: Req 6 (criteria 3, 5, 6)_
 
-- [ ] 3. Implement prompt templates
-  - [ ] 3.1 Create Build Index prompt
+- [x] 3. Implement prompt templates
+  - [x] 3.1 Create Build Index prompt
     - Create `src/backend/app/analysis/on_demand/prompts/__init__.py`
     - Create `src/backend/app/analysis/on_demand/prompts/build_index.py`
     - Define `PROMPT_VERSION = "build-index-v1"`
     - Define `PROMPT_TEMPLATE` with: response_language instruction, instructions to build hierarchical tree with role + question_answered cascade, JSON schema for IndexResult, document content placeholder
     - _Requirements: Req 2 (criteria 1-6)_
 
-  - [ ] 3.2 Create Section Relations prompt
+  - [x] 3.2 Create Section Relations prompt
     - Create `src/backend/app/analysis/on_demand/prompts/section_relations.py`
     - Define `PROMPT_VERSION = "section-relations-v1"`
     - Define `PROMPT_TEMPLATE` with: response_language, instructions to identify relationships (constrains, depends_on, complements, contradicts), exclude trivial connections, JSON schema, document content
     - _Requirements: Req 3 (criteria 1-5)_
 
-  - [ ] 3.3 Create Questions Answered prompt
+  - [x] 3.3 Create Questions Answered prompt
     - Create `src/backend/app/analysis/on_demand/prompts/questions_answered.py`
     - Define `PROMPT_VERSION = "questions-answered-v1"`
     - Define `PROMPT_TEMPLATE` with: response_language, instructions for cascade (3-5 document-level, 1-2 per section), specific/actionable questions, JSON schema, document content
     - _Requirements: Req 4 (criteria 1-6)_
 
-  - [ ] 3.4 Create Conclusions prompt
+  - [x] 3.4 Create Conclusions prompt
     - Create `src/backend/app/analysis/on_demand/prompts/conclusions.py`
     - Define `PROMPT_VERSION = "conclusions-v1"`
     - Define `PROMPT_TEMPLATE` with: response_language for description, document_language for suggestion, categories (coherence, reordering, duplication, orphan, missing), structural-only suggestions, JSON schema, document content
     - _Requirements: Req 5 (criteria 1-5)_
 
-- [ ] 4. Implement analyzers
-  - [ ] 4.1 Create IndexAnalyzer
+- [x] 4. Implement analyzers
+  - [x] 4.1 Create IndexAnalyzer
     - Create `src/backend/app/analysis/on_demand/index_analyzer.py`
     - Implement `IndexAnalyzer` class with `__init__(self, llm_client: LLMClient)`
     - `async analyze(ir, language, model_override, auto_fallback) -> IndexResult`
@@ -96,7 +96,7 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Raise on failure (let service handle error)
     - _Requirements: Req 2 (criteria 1-7)_
 
-  - [ ] 4.2 Create RelationsAnalyzer
+  - [x] 4.2 Create RelationsAnalyzer
     - Create `src/backend/app/analysis/on_demand/relations_analyzer.py`
     - Implement `RelationsAnalyzer` class with `__init__(self, llm_client: LLMClient)`
     - `async analyze(ir, language, model_override, auto_fallback, index_result: IndexResult | None = None) -> RelationsResult`
@@ -106,14 +106,14 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Validate relation types against vocabulary (constrains, depends_on, complements, contradicts)
     - _Requirements: Req 3 (criteria 1-7)_
 
-  - [ ] 4.3 Create QuestionsAnalyzer
+  - [x] 4.3 Create QuestionsAnalyzer
     - Create `src/backend/app/analysis/on_demand/questions_analyzer.py`
     - Implement `QuestionsAnalyzer` class with `__init__(self, llm_client: LLMClient)`
     - `async analyze(ir, language, model_override, auto_fallback) -> QuestionsResult`
     - Parse and validate cascade structure: document_questions + section_questions
     - _Requirements: Req 4 (criteria 1-7)_
 
-  - [ ] 4.4 Create ConclusionsAnalyzer
+  - [x] 4.4 Create ConclusionsAnalyzer
     - Create `src/backend/app/analysis/on_demand/conclusions_analyzer.py`
     - Implement `ConclusionsAnalyzer` class with `__init__(self, llm_client: LLMClient)`
     - `async analyze(ir, language, document_language, model_override, auto_fallback) -> ConclusionsResult`
@@ -121,13 +121,13 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Validate categories against allowed set
     - _Requirements: Req 5 (criteria 1-7)_
 
-  - [ ] 4.5 Create shared text preparation utility
+  - [x] 4.5 Create shared text preparation utility
     - Create helper function `prepare_document_text(ir: IntermediateRepresentation) -> str`
     - Concatenates all chunks with section markers: `[Section: {section}] (chunk {order})\n{text}\n`
     - Used by all four analyzers
     - _Requirements: Req 2 (criterion 1), Req 3 (criterion 1), Req 4 (criterion 1), Req 5 (criterion 1)_
 
-  - [ ] 4.6 Write unit tests for analyzers
+  - [x] 4.6 Write unit tests for analyzers
     - Create `tests/unit/analysis/on_demand/test_index_analyzer.py`
     - Create `tests/unit/analysis/on_demand/test_relations_analyzer.py`
     - Create `tests/unit/analysis/on_demand/test_questions_analyzer.py`
@@ -136,8 +136,8 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - All tests mock LLMClient
     - _Requirements: Req 2-5 (all criteria)_
 
-- [ ] 5. Implement OnDemandAnalysisService
-  - [ ] 5.1 Create service orchestrator
+- [x] 5. Implement OnDemandAnalysisService
+  - [x] 5.1 Create service orchestrator
     - Create `src/backend/app/analysis/on_demand/service.py`
     - Implement `OnDemandAnalysisService` with `__init__(self, index_analyzer, relations_analyzer, questions_analyzer, conclusions_analyzer, storage, ingestion_storage)`
     - `async execute(document_id, analysis_type, preferences) -> AnalysisRecord`:
@@ -151,7 +151,7 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - `async get_all_statuses(document_id) -> dict`: delegate to storage
     - _Requirements: Req 6 (criteria 1-8), Req 7 (criteria 2, 3)_
 
-  - [ ] 5.2 Write unit tests for service
+  - [x] 5.2 Write unit tests for service
     - Create `tests/unit/analysis/on_demand/test_service.py`
     - Test execute: successful (new analysis)
     - Test execute: idempotent (existing completed result returned without LLM call)
@@ -163,8 +163,8 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - All tests mock analyzers + storage
     - _Requirements: Req 6 (criteria 1-8)_
 
-- [ ] 6. Implement API endpoints
-  - [ ] 6.1 Create analyses router
+- [x] 6. Implement API endpoints
+  - [x] 6.1 Create analyses router
     - Create `src/backend/app/api/v1/analyses.py`
     - `POST /api/v1/documents/{document_id}/analyses/{analysis_type}`:
       - Validate analysis_type against enum
@@ -183,19 +183,19 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
       - Return 404 if document not found
     - _Requirements: Req 7 (criteria 1-9)_
 
-  - [ ] 6.2 Register router in application factory
+  - [x] 6.2 Register router in application factory
     - Modify `src/backend/app/main.py`
     - Import and include analyses router with prefix `/api/v1/documents`
     - Wire OnDemandAnalysisService with all dependencies (analyzers, storage, ingestion_storage)
     - Set up dependency_overrides for the analysis service
     - _Requirements: Req 7 (criteria 1-9)_
 
-  - [ ] 6.3 Wire outdated propagation on re-upload
+  - [x] 6.3 Wire outdated propagation on re-upload
     - Modify `src/backend/app/api/v1/documents.py` or `BaseAnalysisService`
     - When a document is re-uploaded and card is marked outdated, also call `OnDemandAnalysisStorage.mark_all_outdated(document_id)`
     - _Requirements: Req 6 (criterion 6)_
 
-  - [ ] 6.4 Write integration tests for API endpoints
+  - [x] 6.4 Write integration tests for API endpoints
     - Create `tests/integration/analysis/test_on_demand_flow.py`
     - Test POST trigger: returns 200 with result
     - Test POST trigger: idempotent (second call returns cached)
@@ -207,14 +207,14 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Tests use httpx TestClient with mocked LLM
     - _Requirements: Req 7 (criteria 1-9)_
 
-- [ ] 7. Create frontend types and API client
-  - [ ] 7.1 Create TypeScript interfaces
+- [x] 7. Create frontend types and API client
+  - [x] 7.1 Create TypeScript interfaces
     - Create `src/frontend/src/types/analysis.ts`
     - Define types: AnalysisType, AnalysisStatus, SourceRef, StructureNode, SectionRelation, AnsweredQuestion, Observation, AnalysisStatusSummary
     - Define response interfaces for each result type
     - _Requirements: Req 8 (criteria 1-4)_
 
-  - [ ] 7.2 Create API client functions
+  - [x] 7.2 Create API client functions
     - Create `src/frontend/src/api/analyses.ts`
     - `triggerAnalysis(documentId, type): Promise<AnalysisResult>` — POST with preference headers, uses `apiFetch`
     - `getAnalysisStatuses(documentId): Promise<AnalysisStatusSummary>` — GET all statuses
@@ -222,15 +222,15 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Handle error responses (404, 409, 502) with typed errors
     - _Requirements: Req 7 (criteria 1-9)_
 
-  - [ ] 7.3 Create Zustand store
+  - [x] 7.3 Create Zustand store
     - Create `src/frontend/src/store/analysisStore.ts`
     - State: `statuses: AnalysisStatusSummary | null`, `results: Partial<Record<AnalysisType, any>>`, `activeAnalysis: AnalysisType | null`, `error: string | null`
     - Actions: `fetchStatuses(documentId)`, `triggerAnalysis(documentId, type)`, `fetchResult(documentId, type)`, `reset()`
     - `triggerAnalysis`: sets activeAnalysis (optimistic in_progress), calls API, on success updates result + status, on failure sets error
     - _Requirements: Req 1 (criteria 6-10), Req 8 (criteria 1-4)_
 
-- [ ] 8. Implement Options Panel component
-  - [ ] 8.1 Create OptionsPanel
+- [x] 8. Implement Options Panel component
+  - [x] 8.1 Create OptionsPanel
     - Create `src/frontend/src/components/analysis/OptionsPanel.tsx`
     - Props: `documentId: string`, `classification: string | null`
     - On mount: call `fetchStatuses(documentId)` from store
@@ -245,12 +245,12 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Use shadcn/ui Card, Button, Badge components
     - _Requirements: Req 1 (criteria 1-10)_
 
-  - [ ] 8.2 Add i18n keys for analysis options
+  - [x] 8.2 Add i18n keys for analysis options
     - Modify `src/frontend/src/i18n/es.json`: add `analysis.*` section with names, descriptions, statuses for each type
     - Modify `src/frontend/src/i18n/en.json`: same structure in English
     - _Requirements: Req 1 (criteria 2, 6-10)_
 
-  - [ ] 8.3 Write component tests for OptionsPanel
+  - [x] 8.3 Write component tests for OptionsPanel
     - Create `src/frontend/tests/components/analysis/OptionsPanel.test.tsx`
     - Test renders all 4 options for non-narrative
     - Test renders only 2 options for narrative classification
@@ -259,8 +259,8 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Test status indicators render correctly per state
     - _Requirements: Req 1 (criteria 1-10)_
 
-- [ ] 9. Implement results display components
-  - [ ] 9.1 Create IndexTreeView
+- [x] 9. Implement results display components
+  - [x] 9.1 Create IndexTreeView
     - Create `src/frontend/src/components/analysis/IndexTreeView.tsx`
     - Renders StructureNode tree as expandable/collapsible
     - Each node shows: title, role badge (if present), question_answered
@@ -269,28 +269,28 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Keyboard navigable (arrow keys expand/collapse)
     - _Requirements: Req 8 (criterion 1), Req 9 (criterion 2)_
 
-  - [ ] 9.2 Create RelationsListView
+  - [x] 9.2 Create RelationsListView
     - Create `src/frontend/src/components/analysis/RelationsListView.tsx`
     - Groups relations by type (constrains, depends_on, complements, contradicts)
     - Each group has a heading with type label
     - Each relation shows: source → target, description, expandable source_ref
     - _Requirements: Req 8 (criterion 2), Req 9 (criterion 2)_
 
-  - [ ] 9.3 Create QuestionsCascadeView
+  - [x] 9.3 Create QuestionsCascadeView
     - Create `src/frontend/src/components/analysis/QuestionsCascadeView.tsx`
     - Document-level questions displayed prominently at top
     - Section-level questions grouped under their parent section title
     - Each question expandable to show source_ref
     - _Requirements: Req 8 (criterion 3), Req 9 (criterion 2)_
 
-  - [ ] 9.4 Create ConclusionsView
+  - [x] 9.4 Create ConclusionsView
     - Create `src/frontend/src/components/analysis/ConclusionsView.tsx`
     - Groups observations by category
     - Each observation shows: description, structural suggestion (visually distinct), section_ref, expandable source_ref
     - Clear visual separation between description (ui_language) and suggestion (document_language)
     - _Requirements: Req 8 (criterion 4), Req 9 (criterion 2)_
 
-  - [ ] 9.5 Create SourceRefPopover
+  - [x] 9.5 Create SourceRefPopover
     - Create `src/frontend/src/components/analysis/SourceRefPopover.tsx`
     - Shared component used by all result views
     - Shows text_excerpt with section context on expand/click
@@ -298,41 +298,41 @@ Implement the On-Demand Analysis feature (C3) that provides four document-level 
     - Accessible: aria-expanded, keyboard trigger
     - _Requirements: Req 9 (criteria 1-4)_
 
-  - [ ] 9.6 Create AnalysisResultView router
+  - [x] 9.6 Create AnalysisResultView router
     - Create `src/frontend/src/components/analysis/AnalysisResultView.tsx`
     - Props: `analysisType`, `result`
     - Routes to correct view component based on type
     - Shows "outdated" banner when status is outdated, with "Re-analyze" button
     - _Requirements: Req 8 (criteria 6, 7)_
 
-- [ ] 10. Integrate into post-upload flow
-  - [ ] 10.1 Add OptionsPanel to UploadPage
+- [x] 10. Integrate into post-upload flow
+  - [x] 10.1 Add OptionsPanel to UploadPage
     - Modify `src/frontend/src/components/upload/UploadPage.tsx`
     - After DocumentCardSection, render OptionsPanel when card is available
     - Pass documentId and card.classification to OptionsPanel
     - _Requirements: Req 1 (criterion 1)_
 
-  - [ ] 10.2 Add AnalysisResultView below OptionsPanel
+  - [x] 10.2 Add AnalysisResultView below OptionsPanel
     - When user triggers or views an analysis, display results below the options panel
     - Use store's activeAnalysis and results to determine what to show
     - _Requirements: Req 8 (criteria 1-7)_
 
-  - [ ] 10.3 Add accessibility attributes
+  - [x] 10.3 Add accessibility attributes
     - All interactive elements keyboard navigable
     - ARIA labels on status badges, buttons, expandable sections
     - Live region for status changes (analysis started, completed)
     - _Requirements: Req 8 (criterion 5)_
 
-- [ ] 11. Integration verification
-  - [ ] 11.1 Frontend build verification
+- [x] 11. Integration verification
+  - [x] 11.1 Frontend build verification
     - Run `npx vite build` — must complete without errors
     - Verify no TypeScript errors in source files
 
-  - [ ] 11.2 Backend startup verification
+  - [x] 11.2 Backend startup verification
     - Run `python -m uvicorn app.run:app` — must start without import errors
     - Verify new endpoints appear in Swagger docs at /docs
 
-  - [ ] 11.3 Manual integration checklist
+  - [x] 11.3 Manual integration checklist
     - Upload document → card appears → Options Panel visible below card
     - Narrative document → only Questions + Conclusions shown
     - Click "Build Index" → spinner → tree appears (5-15s)

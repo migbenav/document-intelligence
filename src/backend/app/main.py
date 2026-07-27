@@ -7,6 +7,11 @@ from app.api.v1.analysis import (
     _get_analysis_service,
     router as analysis_router,
 )
+from app.api.v1.analyses import (
+    _get_on_demand_analysis_service,
+    _get_storage_service as _get_analyses_storage_service,
+    router as analyses_router,
+)
 from app.api.v1.card import (
     _get_base_analysis_service,
     _get_base_analysis_storage,
@@ -35,6 +40,12 @@ from app.analysis.base_analysis.service import BaseAnalysisService
 from app.analysis.base_analysis.storage import BaseAnalysisStorage
 from app.analysis.extraction import ExtractionService
 from app.analysis.llm_client import LLMClient
+from app.analysis.on_demand.conclusions_analyzer import ConclusionsAnalyzer
+from app.analysis.on_demand.index_analyzer import IndexAnalyzer
+from app.analysis.on_demand.questions_analyzer import QuestionsAnalyzer
+from app.analysis.on_demand.relations_analyzer import RelationsAnalyzer
+from app.analysis.on_demand.service import OnDemandAnalysisService
+from app.analysis.on_demand.storage import OnDemandAnalysisStorage
 from app.analysis.quality.ambiguity_detector import AmbiguityDetector
 from app.analysis.quality.completeness_evaluator import CompletenessEvaluator
 from app.analysis.quality.contradiction_detector import ContradictionDetector
@@ -162,11 +173,13 @@ def create_app(
         local_analyzer = LocalAnalyzer()
         llm_analyzer = LLMAnalyzer(llm_client=llm_client)
         base_analysis_storage = BaseAnalysisStorage(supabase_client)
+        on_demand_analysis_storage = OnDemandAnalysisStorage(supabase_client)
 
         base_analysis_service = BaseAnalysisService(
             local_analyzer=local_analyzer,
             llm_analyzer=llm_analyzer,
             storage=base_analysis_storage,
+            on_demand_storage=on_demand_analysis_storage,
         )
 
         app.dependency_overrides[_get_base_analysis_service] = (
@@ -180,9 +193,32 @@ def create_app(
             lambda: base_analysis_service
         )
 
+        # On-demand analysis service dependencies
+        index_analyzer = IndexAnalyzer(llm_client=llm_client)
+        relations_analyzer = RelationsAnalyzer(llm_client=llm_client)
+        questions_analyzer = QuestionsAnalyzer(llm_client=llm_client)
+        conclusions_analyzer = ConclusionsAnalyzer(llm_client=llm_client)
+
+        on_demand_analysis_service = OnDemandAnalysisService(
+            index_analyzer=index_analyzer,
+            relations_analyzer=relations_analyzer,
+            questions_analyzer=questions_analyzer,
+            conclusions_analyzer=conclusions_analyzer,
+            storage=on_demand_analysis_storage,
+            ingestion_storage=storage_service,
+        )
+
+        app.dependency_overrides[_get_on_demand_analysis_service] = (
+            lambda: on_demand_analysis_service
+        )
+        app.dependency_overrides[_get_analyses_storage_service] = (
+            lambda: storage_service
+        )
+
     # --- Router registration ---
     app.include_router(documents_router, prefix="/api/v1/documents", tags=["documents"])
     app.include_router(analysis_router, prefix="/api/v1/documents", tags=["analysis"])
+    app.include_router(analyses_router, prefix="/api/v1/documents", tags=["analyses"])
     app.include_router(quality_router, prefix="/api/v1/documents", tags=["quality"])
     app.include_router(query_router, prefix="/api/v1/documents", tags=["query"])
     app.include_router(card_router, prefix="/api/v1/documents", tags=["card"])

@@ -8,19 +8,28 @@ Key behaviors:
 - Idempotency: skips re-execution if a completed card with matching size_bytes exists.
 - Graceful degradation: never raises exceptions; any failure produces a partial card.
 - Retry: retry_llm re-executes only the LLM phase for an existing card.
+- Outdated propagation: on re-upload (size mismatch), marks all on-demand analysis
+  results as outdated via OnDemandAnalysisStorage.
 
-Requirements covered: Req 1 (criteria 3, 4), Req 4 (criterion 4), Req 5 (criteria 1, 2, 3).
+Requirements covered: Req 1 (criteria 3, 4), Req 4 (criterion 4), Req 5 (criteria 1, 2, 3),
+                      On-Demand Req 6 (criterion 6).
 """
+
+from __future__ import annotations
 
 import logging
 import uuid
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from app.analysis.base_analysis.llm_analyzer import LLMAnalyzer, LLMAnalysisResult
 from app.analysis.base_analysis.local_analyzer import LocalAnalyzer, LocalAnalysisResult
 from app.analysis.base_analysis.storage import BaseAnalysisStorage
 from app.models.document import IntermediateRepresentation
 from app.models.document_card import DocumentCard
+
+if TYPE_CHECKING:
+    from app.analysis.on_demand.storage import OnDemandAnalysisStorage
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +53,7 @@ class BaseAnalysisService:
         local_analyzer: LocalAnalyzer,
         llm_analyzer: LLMAnalyzer,
         storage: BaseAnalysisStorage,
+        on_demand_storage: OnDemandAnalysisStorage | None = None,
     ) -> None:
         """Initialize with analyzer and storage dependencies.
 
@@ -51,10 +61,13 @@ class BaseAnalysisService:
             local_analyzer: Deterministic IR processor (no network calls).
             llm_analyzer: LLM-based summary/classification producer.
             storage: Persistence layer for DocumentCard.
+            on_demand_storage: Optional on-demand analysis storage for
+                outdated propagation on re-upload.
         """
         self._local_analyzer = local_analyzer
         self._llm_analyzer = llm_analyzer
         self._storage = storage
+        self._on_demand_storage = on_demand_storage
 
     async def analyze(
         self,
@@ -92,6 +105,22 @@ class BaseAnalysisService:
                 and existing_card.file_metadata.size_bytes == ir.metadata.size_bytes
             ):
                 return existing_card
+
+            # Re-upload detection: if an existing card exists but size differs,
+            # mark all on-demand analysis results as outdated (Req 6 criterion 6).
+            if (
+                existing_card is not None
+                and existing_card.file_metadata.size_bytes != ir.metadata.size_bytes
+                and self._on_demand_storage is not None
+            ):
+                try:
+                    await self._on_demand_storage.mark_all_outdated(document_id)
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to mark on-demand analyses outdated for document '%s': %s",
+                        document_id,
+                        str(exc),
+                    )
 
             # Step 1: Local processing (deterministic, always succeeds)
             local_result: LocalAnalysisResult = self._local_analyzer.analyze(ir)

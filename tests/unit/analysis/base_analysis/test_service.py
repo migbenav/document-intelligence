@@ -566,3 +566,121 @@ class TestRetryLlmCardNotFound:
             await service.retry_llm("doc-001", ir)
 
         mock_storage.upsert_card.assert_not_called()
+
+
+# --- Tests: analyze() — Outdated Propagation on Re-upload ---
+
+
+class TestAnalyzeOutdatedPropagation:
+    """Tests for on-demand analysis outdated propagation when size mismatch is detected.
+
+    Requirements validated: On-Demand Req 6 (criterion 6)
+    """
+
+    @pytest.fixture
+    def mock_on_demand_storage(self):
+        """Mock OnDemandAnalysisStorage with async mark_all_outdated."""
+        storage = MagicMock()
+        storage.mark_all_outdated = AsyncMock(return_value=None)
+        return storage
+
+    @pytest.fixture
+    def service_with_on_demand(
+        self, mock_local_analyzer, mock_llm_analyzer, mock_storage, mock_on_demand_storage
+    ):
+        """Create a BaseAnalysisService with on_demand_storage wired."""
+        return BaseAnalysisService(
+            local_analyzer=mock_local_analyzer,
+            llm_analyzer=mock_llm_analyzer,
+            storage=mock_storage,
+            on_demand_storage=mock_on_demand_storage,
+        )
+
+    async def test_marks_on_demand_outdated_when_size_differs(
+        self,
+        service_with_on_demand,
+        mock_storage,
+        mock_on_demand_storage,
+    ):
+        """analyze() calls mark_all_outdated when existing card size doesn't match IR."""
+        existing_card = _make_completed_card(document_id="doc-001", size_bytes=3000)
+        mock_storage.get_card = AsyncMock(return_value=existing_card)
+        ir = _make_ir(document_id="doc-001", size_bytes=5000)
+
+        await service_with_on_demand.analyze("doc-001", ir)
+
+        mock_on_demand_storage.mark_all_outdated.assert_called_once_with("doc-001")
+
+    async def test_does_not_mark_outdated_when_size_matches(
+        self,
+        service_with_on_demand,
+        mock_storage,
+        mock_on_demand_storage,
+    ):
+        """analyze() does NOT call mark_all_outdated when size matches (idempotent)."""
+        existing_card = _make_completed_card(document_id="doc-001", size_bytes=5000)
+        mock_storage.get_card = AsyncMock(return_value=existing_card)
+        ir = _make_ir(document_id="doc-001", size_bytes=5000)
+
+        await service_with_on_demand.analyze("doc-001", ir)
+
+        mock_on_demand_storage.mark_all_outdated.assert_not_called()
+
+    async def test_does_not_mark_outdated_when_no_existing_card(
+        self,
+        service_with_on_demand,
+        mock_storage,
+        mock_on_demand_storage,
+    ):
+        """analyze() does NOT call mark_all_outdated when there is no existing card."""
+        mock_storage.get_card = AsyncMock(return_value=None)
+        ir = _make_ir(document_id="doc-001", size_bytes=5000)
+
+        await service_with_on_demand.analyze("doc-001", ir)
+
+        mock_on_demand_storage.mark_all_outdated.assert_not_called()
+
+    async def test_continues_analysis_when_mark_outdated_fails(
+        self,
+        service_with_on_demand,
+        mock_storage,
+        mock_on_demand_storage,
+        mock_local_analyzer,
+        mock_llm_analyzer,
+    ):
+        """analyze() continues normally even if mark_all_outdated raises an exception."""
+        existing_card = _make_completed_card(document_id="doc-001", size_bytes=3000)
+        mock_storage.get_card = AsyncMock(return_value=existing_card)
+        mock_on_demand_storage.mark_all_outdated = AsyncMock(
+            side_effect=RuntimeError("DB connection failed")
+        )
+        ir = _make_ir(document_id="doc-001", size_bytes=5000)
+
+        card = await service_with_on_demand.analyze("doc-001", ir)
+
+        # Analysis should still complete successfully
+        assert card.status == "completed"
+        mock_local_analyzer.analyze.assert_called_once()
+        mock_llm_analyzer.analyze.assert_called_once()
+
+    async def test_does_not_call_mark_outdated_when_on_demand_storage_is_none(
+        self,
+        mock_local_analyzer,
+        mock_llm_analyzer,
+        mock_storage,
+    ):
+        """analyze() skips mark_all_outdated when on_demand_storage is None."""
+        service_without_od = BaseAnalysisService(
+            local_analyzer=mock_local_analyzer,
+            llm_analyzer=mock_llm_analyzer,
+            storage=mock_storage,
+            on_demand_storage=None,
+        )
+        existing_card = _make_completed_card(document_id="doc-001", size_bytes=3000)
+        mock_storage.get_card = AsyncMock(return_value=existing_card)
+        ir = _make_ir(document_id="doc-001", size_bytes=5000)
+
+        # Should not raise, should proceed normally
+        card = await service_without_od.analyze("doc-001", ir)
+
+        assert card.status == "completed"

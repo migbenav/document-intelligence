@@ -158,5 +158,89 @@
       "emptyState": "Haz una pregunta sobre este documento para comenzar.",
       "loading": "Procesando tu pregunta, por favor espera."
     }
+  },
+  "analysis": {
+    "panelLabel": "Análisis bajo demanda del documento",
+    "resultLabel": "Resultados del análisis",
+    "liveRegion": {
+      "started": "Análisis {name} en progreso",
+      "completed": "Análisis {name} completado",
+      "failed": "Análisis {name} falló"
+    },
+    "panel": {
+      "title": "Análisis Disponibles",
+      "description": "Explora el documento con análisis especializados"
+    },
+    "types": {
+      "build_index": {
+        "name": "Índice Estructural",
+        "description": "Genera un árbol jerárquico de la estructura del documento"
+      },
+      "section_relations": {
+        "name": "Relaciones entre Secciones",
+        "description": "Identifica dependencias y conexiones entre partes del documento"
+      },
+      "questions_answered": {
+        "name": "Preguntas que Responde",
+        "description": "Descubre qué preguntas aborda el documento en cada nivel"
+      },
+      "conclusions": {
+        "name": "Conclusiones y Recomendaciones",
+        "description": "Observaciones sobre la coherencia estructural del documento"
+      }
+    },
+    "status": {
+      "not_started": "No iniciado",
+      "in_progress": "En progreso...",
+      "completed": "Completado",
+      "outdated": "Desactualizado",
+      "failed": "Error"
+    },
+    "actions": {
+      "analyze": "Analizar",
+      "analyzing": "Analizando",
+      "view": "Ver resultados",
+      "reanalyze": "Re-analizar",
+      "retry": "Reintentar"
+    },
+    "outdatedBanner": "Los resultados pueden no reflejar el documento actual.",
+    "relations": {
+      "title": "Relaciones entre Secciones",
+      "empty": "No se identificaron relaciones entre secciones.",
+      "types": {
+        "constrains": "Restringe",
+        "depends_on": "Depende de",
+        "complements": "Complementa",
+        "contradicts": "Contradice"
+      },
+      "sourceRef": {
+        "show": "Mostrar fuente",
+        "hide": "Ocultar fuente",
+        "section": "Sección: {section}"
+      }
+    },
+    "conclusions": {
+      "ariaLabel": "Conclusiones y recomendaciones",
+      "empty": "No se encontraron observaciones estructurales.",
+      "suggestion": "Sugerencia estructural",
+      "sectionRef": "Sección relacionada",
+      "sourceRef": "Referencia de fuente",
+      "showSource": "Mostrar fuente",
+      "hideSource": "Ocultar fuente",
+      "sectionContext": "Sección: {section}",
+      "categories": {
+        "coherence": "Coherencia",
+        "reordering": "Reordenamiento",
+        "duplication": "Duplicación",
+        "orphan": "Secciones Huérfanas",
+        "missing": "Elementos Faltantes"
+      }
+    },
+    "sourceRef": {
+      "unverified": "No verificado",
+      "showSource": "Mostrar fuente",
+      "hideSource": "Ocultar fuente",
+      "section": "Sección: {section}"
+    }
   }
 }

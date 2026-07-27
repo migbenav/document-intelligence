@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { usePreferencesStore } from '@/store/preferencesStore';
 
 const STORAGE_KEY = 'user_preferences';

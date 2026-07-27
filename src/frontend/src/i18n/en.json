@@ -158,5 +158,89 @@
       "emptyState": "Ask a question about this document to get started.",
       "loading": "Processing your question, please wait."
     }
+  },
+  "analysis": {
+    "panelLabel": "On-demand document analyses",
+    "resultLabel": "Analysis results",
+    "liveRegion": {
+      "started": "{name} analysis in progress",
+      "completed": "{name} analysis completed",
+      "failed": "{name} analysis failed"
+    },
+    "panel": {
+      "title": "Available Analyses",
+      "description": "Explore the document with specialized analyses"
+    },
+    "types": {
+      "build_index": {
+        "name": "Structural Index",
+        "description": "Generates a hierarchical tree of the document's structure"
+      },
+      "section_relations": {
+        "name": "Section Relations",
+        "description": "Identifies dependencies and connections between document parts"
+      },
+      "questions_answered": {
+        "name": "Questions Answered",
+        "description": "Discover what questions the document addresses at each level"
+      },
+      "conclusions": {
+        "name": "Conclusions & Recommendations",
+        "description": "Observations about the document's structural coherence"
+      }
+    },
+    "status": {
+      "not_started": "Not started",
+      "in_progress": "In progress...",
+      "completed": "Completed",
+      "outdated": "Outdated",
+      "failed": "Failed"
+    },
+    "actions": {
+      "analyze": "Analyze",
+      "analyzing": "Analyzing",
+      "view": "View results",
+      "reanalyze": "Re-analyze",
+      "retry": "Retry"
+    },
+    "outdatedBanner": "Results may not reflect the current document.",
+    "relations": {
+      "title": "Section Relations",
+      "empty": "No relations were identified between sections.",
+      "types": {
+        "constrains": "Constrains",
+        "depends_on": "Depends On",
+        "complements": "Complements",
+        "contradicts": "Contradicts"
+      },
+      "sourceRef": {
+        "show": "Show source",
+        "hide": "Hide source",
+        "section": "Section: {section}"
+      }
+    },
+    "conclusions": {
+      "ariaLabel": "Conclusions and recommendations",
+      "empty": "No structural observations found.",
+      "suggestion": "Structural suggestion",
+      "sectionRef": "Related section",
+      "sourceRef": "Source reference",
+      "showSource": "Show source",
+      "hideSource": "Hide source",
+      "sectionContext": "Section: {section}",
+      "categories": {
+        "coherence": "Coherence",
+        "reordering": "Reordering",
+        "duplication": "Duplication",
+        "orphan": "Orphan Sections",
+        "missing": "Missing Elements"
+      }
+    },
+    "sourceRef": {
+      "unverified": "Unverified",
+      "showSource": "Show source",
+      "hideSource": "Hide source",
+      "section": "Section: {section}"
+    }
   }
 }
