@@ -184,6 +184,43 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 
 ---
 
+### Feature 11: Analysis Quality v2
+
+| Aspecto | Detalle |
+|---------|---------|
+| **Objetivo** | Rediseñar los análisis on-demand para que comprendan el PROPÓSITO FUNCIONAL del documento (no solo su estructura visual), mejorar transparencia de modelo, corregir fallback, y mejorar detección de idioma. |
+| **Estado** | 🚧 En desarrollo |
+| **Capacidades PRD** | C3 (mejora de calidad), C5 (transparencia de modelo) |
+| **ADRs relacionados** | ADR-007 (rediseño estructural), ADR-009 (rediseño de calidad) |
+| **Dependencias** | Feature 8 (Base Analysis — clasificación), Feature 9 (On-Demand Analysis — prompts existentes) |
+| **Entregable** | Prompts v2 para los 4 análisis (funcional, no visual), model_id real propagado al frontend, errores clasificados (cuota/timeout/auth), fallback cross-provider, detección de idioma mejorada (pt, fr), nuevos modelos en selector. |
+
+**Alcance técnico:**
+- Backend: AnalyzerResponse dataclass, prompts v2 (build_index, questions, conclusions, relations), LLMQuotaExhaustedError, cross-provider fallback, language detector ampliado
+- Modelos: StructureNode +functional_group/original_headings, QuestionsResult +coherence_note, Observation categories actualizadas, SectionRelation types actualizados
+- Frontend: badge de modelo en resultados, errores diferenciados, nuevos modelos en selector
+- Spec: `.kiro/specs/analysis-quality-v2/`
+
+---
+
+### Feature 12: Analysis Workspace UI (pendiente)
+
+| Aspecto | Detalle |
+|---------|---------|
+| **Objetivo** | Rediseñar el layout post-análisis con dos paneles (opciones a la izquierda, resultados a la derecha), navegación entre documentos analizados, persistencia de análisis independiente del documento temporal. |
+| **Estado** | 🔲 Pendiente |
+| **Capacidades PRD** | C3 (exploración), C6 (persistencia) |
+| **ADRs relacionados** | ADR-007 (análisis progresivo) |
+| **Dependencias** | Feature 11 (Analysis Quality v2 — resultados mejorados para visualizar) |
+| **Entregable** | Layout de dos columnas para desktop, navegación entre documentos previos, tabla analyzed_documents para persistencia, upload sin perder análisis previos. |
+
+**Alcance técnico:**
+- Backend: tabla analyzed_documents, endpoints para listar documentos previos y sus análisis
+- Frontend: AnalysisWorkspace (layout 2 columnas), documentListStore, tabs para resultados, responsive (vertical en mobile)
+- Spec: `.kiro/specs/analysis-workspace-ui/` (por crear)
+
+---
+
 ## Diagrama de dependencias
 
 ```
@@ -198,10 +235,21 @@ Feature 3: Analysis Engine (Knowledge Model Extraction) ✅
     ├─────────────────────┬──────────────────────┐
     ▼                     ▼                      ▼
 Feature 4:          Feature 5:             Feature 6:
-Visualization ✅    Quality Analysis ✅    NL Queries
+Visualization ✅    Quality Analysis ✅    NL Queries ✅
     │
     ▼
 Feature 7: User Feedback (Should Have)
+
+Feature 8: Base Analysis (C2) ✅
+    │
+    ▼
+Feature 9: On-Demand Analysis (C3) ✅ ──── Feature 10: User Preferences (C5) ✅
+    │
+    ▼
+Feature 11: Analysis Quality v2 🚧
+    │
+    ▼
+Feature 12: Analysis Workspace UI 🔲
 ```
 
 ---
@@ -215,8 +263,13 @@ Feature 7: User Feedback (Should Have)
 | 3 | Analysis Engine (KM Extraction) | ✅ Completada | Must Have | — |
 | 4 | KM Visualization & Exploration | ✅ Completada | Must Have | — |
 | 5 | Document Quality Analysis | ✅ Completada | Must Have | — |
-| 6 | Natural Language Queries | 🔲 Pendiente | Must Have | Medio |
+| 6 | Natural Language Queries | ✅ Completada | Must Have | — |
 | 7 | User Feedback | 🔲 Pendiente | Should Have | Bajo |
+| 8 | Base Analysis (C2) | ✅ Completada | Must Have | — |
+| 9 | On-Demand Analysis (C3) | ✅ Completada | Must Have | — |
+| 10 | User Preferences (C5) | ✅ Completada | Must Have | — |
+| 11 | Analysis Quality v2 | 🚧 En desarrollo | Must Have | Alto |
+| 12 | Analysis Workspace UI | 🔲 Pendiente | Must Have | Medio |
 
 ---
 
@@ -241,9 +294,12 @@ Feature 7: User Feedback (Should Have)
 | ADR-001 (MVP scope) | Todas — define qué incluye el MVP |
 | ADR-002 (Knowledge Model) | Feature 3, 4, 5 |
 | ADR-003 (Document Ingestion) | Feature 1, 2 |
-| ADR-004 (Reliability/Trust) | Feature 3, 4, 5, 6, 7 |
+| ADR-004 (Reliability/Trust) | Feature 3, 4, 5, 6, 7, 8, 9, 11 |
 | ADR-005 (Privacy) | Feature 2, 3 |
-| ADR-006 (Document Types) | Feature 3, 5 |
+| ADR-006 (Document Types) | Feature 3, 5, 8, 11 |
+| ADR-007 (Structural Analysis Redesign) | Feature 8, 9, 11 |
+| ADR-008 (LLM Context Caching) | Feature 9 (optimización futura) |
+| ADR-009 (Analysis Quality Redesign) | Feature 11 |
 
 ---
 

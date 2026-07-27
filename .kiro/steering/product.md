@@ -53,17 +53,23 @@ Documentos narrativos obtienen solo análisis base + "Preguntas que responde" + 
 
 ## Diferenciador
 
-Este producto NO es un chatbot sobre documentos ni un generador de resúmenes. ES una herramienta que guarda el conocimiento estructural de un documento, permite entender sin leer y profundizar bajo demanda, y prepara el terreno para sincronización entre documentos en futuras versiones.
+Este producto NO es un chatbot sobre documentos ni un generador de resúmenes. ES una herramienta que comprende el PROPÓSITO FUNCIONAL de un documento — qué hace, cómo organiza sus funciones, qué lógica sigue — y permite entender sin leer y profundizar bajo demanda.
+
+El análisis NO se basa en el contenido como información sino en el PROPÓSITO del contenido. No interesa qué dice un párrafo, sino qué función cumple dentro del documento (define, restringe, habilita, controla). Los encabezados son pistas, pero la estructura real es funcional.
 
 ## Principios funcionales
 
 - El objetivo es ayudar al usuario a comprender el documento sin leerlo.
 - Análisis progresivo: una primera salida rápida y opciones de profundización bajo demanda.
-- La estructura del documento se preserva como árbol jerárquico de bloques.
-- Todo resultado debe poder verificarse trazándolo hasta el documento original.
+- El análisis se enfoca en la ORGANIZACIÓN FUNCIONAL del documento (qué hace cada parte), no en su estructura visual (qué encabezados tiene).
+- Secciones que sirven al mismo propósito se agrupan funcionalmente, aunque sean capítulos separados.
+- Las preguntas generadas revelan la LÓGICA del documento (flujo decisional, cobertura, secuencia), no resumen el contenido.
+- Las recomendaciones detectan problemas reales: mezcla de propósitos, contenido fuera de lugar, contradicciones dentro del mismo dominio. Nunca comparan dominios independientes.
+- La clasificación del documento (normativo, procedimental, narrativo) guía el comportamiento de todos los análisis.
+- Todo resultado debe poder verificarse trazándolo hasta el documento original (source_ref).
 - El sistema informa y pide consentimiento antes de procesar datos externamente.
-- Documentos sin estructura definida obtienen valor limitado pero real (análisis base).
-- El usuario tiene control sobre qué se analiza y con qué modelo.
+- El usuario tiene control sobre qué se analiza, con qué modelo, y ve qué modelo respondió realmente.
+- Los análisis se persisten indefinidamente para futura comparación entre documentos.
 
 ## Funcionalidades fuera del alcance del MVP
 
@@ -88,4 +94,5 @@ No implementar:
 - PRD v0.6 (superseded): #[[file:docs/product/03-prd.md]]
 - Spec MVP original: #[[file:docs/product/04-product-mvp-specification.md]]
 - ADR-007 Rediseño estructural: #[[file:docs/decisions/ADR-007-structural-analysis-redesign.md]]
+- ADR-009 Rediseño calidad de análisis: #[[file:docs/decisions/ADR-009-analysis-quality-redesign.md]]
 - Retrospectiva 001: #[[file:docs/retrospectives/001-knowledge-model-disconnect.md]]
