@@ -221,6 +221,26 @@ El MVP debe demostrar que un documento puede comprenderse mejor cuando se repres
 
 ---
 
+### Feature 13: Document Card Redesign (C2 evolution)
+
+| Aspecto | Detalle |
+|---------|---------|
+| **Objetivo** | Rediseñar la Document Card para separar la ficha técnica (local, instantánea) del contenido (LLM). Incorporar clasificación formal de 4 niveles basada en tipologías documentales ISO/archivística. Reducir dependencia del LLM usando lingua-py y textstat. |
+| **Estado** | 🔲 Pendiente |
+| **Capacidades PRD** | C2 (evolución de análisis base) |
+| **ADRs relacionados** | ADR-007 (análisis progresivo), ADR-009 (calidad de análisis — clasificación como input) |
+| **Dependencias** | Feature 8 (Base Analysis — evoluciona la card existente) |
+| **Entregable** | Card con dos secciones (Ficha Técnica + Contenido), taxonomía 4 niveles con confidence, lingua-py para idioma, textstat para legibilidad, prompt v3 reducido, hints de clasificación local. |
+
+**Alcance técnico:**
+- Backend: TextStatsAnalyzer (textstat), lingua-py language detection, classification.py (4 enums + DocumentClassificationResult), prompts_v3.py, LocalAnalyzer v2 (hints), LLMAnalyzer v3
+- Frontend: DocumentCardView rewrite (dos secciones, collapsibles, tooltips), ProcessingStatus simplificado
+- Modelos: TextStats, ClassificationHints, LLMAnalysisResultV3, DocumentCard extendido
+- Dependencias nuevas: lingua-language-detector>=2.0.0, textstat>=0.7.0
+- Spec: `.kiro/specs/document-card-redesign/`
+
+---
+
 ## Diagrama de dependencias
 
 ```
@@ -242,11 +262,13 @@ Feature 7: User Feedback (Should Have)
 
 Feature 8: Base Analysis (C2) ✅
     │
-    ▼
-Feature 9: On-Demand Analysis (C3) ✅ ──── Feature 10: User Preferences (C5) ✅
-    │
-    ▼
-Feature 11: Analysis Quality v2 🚧
+    ├──────────────────────────────────────────────┐
+    ▼                                              ▼
+Feature 9: On-Demand Analysis (C3) ✅    Feature 13: Document Card Redesign 🔲
+    │                                              │
+    ├──── Feature 10: User Preferences (C5) ✅    │
+    ▼                                              ▼
+Feature 11: Analysis Quality v2 🚧 ◀──────────────┘
     │
     ▼
 Feature 12: Analysis Workspace UI 🔲
@@ -270,6 +292,7 @@ Feature 12: Analysis Workspace UI 🔲
 | 10 | User Preferences (C5) | ✅ Completada | Must Have | — |
 | 11 | Analysis Quality v2 | 🚧 En desarrollo | Must Have | Alto |
 | 12 | Analysis Workspace UI | 🔲 Pendiente | Must Have | Medio |
+| 13 | Document Card Redesign | 🔲 Pendiente | Must Have | Medio |
 
 ---
 
@@ -278,7 +301,7 @@ Feature 12: Analysis Workspace UI 🔲
 | Capacidad PRD | Feature(s) que la implementan |
 |---------------|-------------------------------|
 | C1 — Ingreso de documentos | Feature 1 (backend) + Feature 2 (UI) |
-| C2 — Comprensión documental | Feature 3 |
+| C2 — Comprensión documental | Feature 3, Feature 8 (base analysis), Feature 13 (card redesign) |
 | C3 — Exploración del conocimiento | Feature 4 |
 | C4 — Análisis de calidad documental | Feature 5 |
 | C5 — Asistencia mediante IA | Feature 6 |
@@ -297,9 +320,9 @@ Feature 12: Analysis Workspace UI 🔲
 | ADR-004 (Reliability/Trust) | Feature 3, 4, 5, 6, 7, 8, 9, 11 |
 | ADR-005 (Privacy) | Feature 2, 3 |
 | ADR-006 (Document Types) | Feature 3, 5, 8, 11 |
-| ADR-007 (Structural Analysis Redesign) | Feature 8, 9, 11 |
+| ADR-007 (Structural Analysis Redesign) | Feature 8, 9, 11, 13 |
 | ADR-008 (LLM Context Caching) | Feature 9 (optimización futura) |
-| ADR-009 (Analysis Quality Redesign) | Feature 11 |
+| ADR-009 (Analysis Quality Redesign) | Feature 11, 13 |
 
 ---
 

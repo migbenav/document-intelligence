@@ -20,7 +20,7 @@ Document Intelligence permite **comprender la estructura y contenido de un docum
 
 El MVP trabaja con un único documento y produce:
 
-1. **Análisis base automático** (< 5 segundos): ficha del documento con título, resumen, clasificación, estadísticas y estructura detectada.
+1. **Análisis base automático** (< 5 segundos): ficha del documento con título, resumen, clasificación de 4 niveles con confianza, estadísticas, legibilidad, idioma (lingua-py), y estructura detectada. Separado en Ficha Técnica (instantánea) y Contenido (LLM).
 2. **Análisis bajo demanda** (el usuario elige): construir/revisar índice, relaciones entre secciones, preguntas que responde el documento, conclusiones y recomendaciones.
 3. **Análisis a nivel de bloque** (para documentos con estructura): rol del bloque, relaciones del bloque.
 4. **Configuración del LLM**: selector de modelo, auto-fallback configurable.
@@ -32,7 +32,7 @@ El MVP trabaja con un único documento y produce:
 | Capacidad | Descripción |
 |-----------|-------------|
 | C1. Ingreso | Carga de documentos (MD, TXT, PDF) con consentimiento previo |
-| C2. Análisis base | Ficha automática en < 5s: resumen, clasificación, estadísticas, estructura |
+| C2. Análisis base | Ficha automática en < 5s: resumen, clasificación 4 niveles, estadísticas, legibilidad, estructura. Card en dos secciones (Ficha Técnica + Contenido) |
 | C3. Análisis bajo demanda | Índice, relaciones, preguntas, conclusiones — acumulativos |
 | C4. Análisis de bloque | Rol y relaciones a nivel de bloque (solo docs con estructura) |
 | C5. Configuración LLM | Selector de modelo + auto-fallback configurable |
@@ -42,14 +42,27 @@ El MVP trabaja con un único documento y produce:
 
 ## Clasificación de documentos
 
-La clasificación es funcional (orienta qué análisis es útil), no tipológica:
+La clasificación usa una taxonomía formal de 4 niveles basada en tipologías documentales ISO/archivística:
 
-- Normativo (reglamento, ley, política)
-- Procedimental (manual, guía, SOP)
-- Técnico (spec, arquitectura)
-- Narrativo / sin estructura (artículo, cuento, reporte)
+1. **Ámbito (Scope):** institucional, gubernamental, particular, otro
+2. **Propósito (Purpose):** normativo, operativo, informativo, evidencia, contractual
+3. **Género (Genre):** prescriptivo, instructivo, expositivo, registral, bilateral
+4. **Formato (Format):** reglamento, política, manual, procedimiento, protocolo, guía, acta, contrato, otro
 
-Documentos narrativos obtienen solo análisis base + "Preguntas que responde" + "Conclusiones". Los análisis de nivel bloque no se ofrecen para ellos.
+La clasificación se muestra como cadena: "Institucional → Normativo → Prescriptivo → Reglamento (87%)" con un porcentaje de confianza.
+
+Para efectos de comportamiento del sistema, la clasificación determina:
+
+| Propósito + Género | Comportamiento |
+|---------------------|---------------|
+| Normativo/Operativo + Prescriptivo/Instructivo/Bilateral | Documento "vivo" — todas las opciones de análisis disponibles |
+| Informativo + Expositivo | Documento "congelado" — análisis limitados |
+| Cualquier otro | Documento "vivo" por defecto |
+
+Documentos "vivos" (reglamento, política, manual, procedimiento, protocolo, guía, acta, contrato) activan todos los análisis.
+Documentos "congelados" (informativo + expositivo) tienen análisis limitados.
+
+> **Nota histórica:** La clasificación anterior era plana (normativo, procedimental, técnico, narrativo). La taxonomía de 4 niveles la reemplaza con mayor granularidad. Ver spec: `.kiro/specs/document-card-redesign/`.
 
 ## Diferenciador
 
@@ -65,7 +78,7 @@ El análisis NO se basa en el contenido como información sino en el PROPÓSITO 
 - Secciones que sirven al mismo propósito se agrupan funcionalmente, aunque sean capítulos separados.
 - Las preguntas generadas revelan la LÓGICA del documento (flujo decisional, cobertura, secuencia), no resumen el contenido.
 - Las recomendaciones detectan problemas reales: mezcla de propósitos, contenido fuera de lugar, contradicciones dentro del mismo dominio. Nunca comparan dominios independientes.
-- La clasificación del documento (normativo, procedimental, narrativo) guía el comportamiento de todos los análisis.
+- La clasificación del documento (taxonomía de 4 niveles: ámbito, propósito, género, formato) guía el comportamiento de todos los análisis.
 - Todo resultado debe poder verificarse trazándolo hasta el documento original (source_ref).
 - El sistema informa y pide consentimiento antes de procesar datos externamente.
 - El usuario tiene control sobre qué se analiza, con qué modelo, y ve qué modelo respondió realmente.
@@ -82,7 +95,7 @@ No implementar:
 - Procesamiento local o self-hosted de IA.
 - Edición colaborativa, control de versiones documental.
 - DOCX, OCR, imágenes, tablas complejas.
-- Confidence scores por resultado.
+- Confidence scores por resultado (excepto clasificación documental, que sí incluye confidence en el card redesign).
 - Detección de cambios por content hash (solo metadatos en MVP).
 - Configuración dinámica de taxonomías o tipos personalizados.
 
@@ -96,3 +109,4 @@ No implementar:
 - ADR-007 Rediseño estructural: #[[file:docs/decisions/ADR-007-structural-analysis-redesign.md]]
 - ADR-009 Rediseño calidad de análisis: #[[file:docs/decisions/ADR-009-analysis-quality-redesign.md]]
 - Retrospectiva 001: #[[file:docs/retrospectives/001-knowledge-model-disconnect.md]]
+- Spec Document Card Redesign: #[[file:.kiro/specs/document-card-redesign/requirements.md]]
